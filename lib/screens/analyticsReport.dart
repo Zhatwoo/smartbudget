@@ -66,12 +66,30 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Export Report'),
-        content: const Text('PDF export feature will be available soon.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: const Text(
+          'Export Report',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'PDF export feature will be available soon.',
+          style: TextStyle(fontSize: 15),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(
+              'OK',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -81,96 +99,147 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            // Header with Back Button and Export PDF
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.grey),
-                  onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Back',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.picture_as_pdf, color: Colors.grey),
-                  onPressed: _exportToPDF,
-                  tooltip: 'Export PDF',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Date Range Filter
+            // Custom Header (matching dashboard style)
             Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.date_range),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: _selectDateRange,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Date Range',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _selectedDateRange == null
-                                ? 'Last 6 months'
-                                : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Analytics Report',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
-                  if (_selectedDateRange != null)
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: _clearDateRange,
-                      tooltip: 'Clear filter',
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                    onPressed: _exportToPDF,
+                    tooltip: 'Export PDF',
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date Range Filter
+                    Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.15),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4A90E2).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.date_range_rounded,
+                              color: Color(0xFF4A90E2),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: InkWell(
+                              onTap: _selectDateRange,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Date Range',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _selectedDateRange == null
+                                        ? 'Last 6 months'
+                                        : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_selectedDateRange != null)
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              onPressed: _clearDateRange,
+                              tooltip: 'Clear filter',
+                              color: Colors.grey.shade600,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-            // Monthly Spending Trends
-            _buildMonthlyTrendsSection(),
-            const SizedBox(height: 24),
+                    // Monthly Spending Trends
+                    _buildMonthlyTrendsSection(),
+                    const SizedBox(height: 24),
 
-            // Category Breakdown
-            _buildCategoryBreakdownSection(),
-            const SizedBox(height: 24),
+                    // Category Breakdown
+                    _buildCategoryBreakdownSection(),
+                    const SizedBox(height: 24),
 
-            // Predicted Expenses
-            _buildPredictedExpensesSection(),
-            const SizedBox(height: 24),
+                    // Predicted Expenses
+                    _buildPredictedExpensesSection(),
+                    const SizedBox(height: 24),
 
-            // Inflation Impact
-            _buildInflationImpactSection(),
+                    // Inflation Impact
+                    _buildInflationImpactSection(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ],
-        ),
         ),
       ),
     );
@@ -183,20 +252,32 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Monthly Spending Trends',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.15),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -205,8 +286,8 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                 child: CustomPaint(
                   painter: LineChartPainter(
                     _monthlySpending.map((m) => m.amount).toList(),
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.onSurfaceVariant,
+                    const Color(0xFF4A90E2),
+                    Colors.grey.shade400,
                   ),
                   child: Container(),
                 ),
@@ -221,16 +302,17 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                         month.month,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '₱${(month.amount / 1000).toStringAsFixed(0)}k',
-                        style: TextStyle(
-                          fontSize: 10,
+                        style: const TextStyle(
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
@@ -248,20 +330,32 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Category-wise Breakdown',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.15),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -301,16 +395,18 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                               children: [
                                 Text(
                                   category.name,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Colors.black87,
+                                    fontSize: 15,
                                   ),
                                 ),
                                 Text(
-                                  '₱${category.amount.toStringAsFixed(2)} (${percentage.toStringAsFixed(1)}%)',
+                                  '₱${category.amount.toStringAsFixed(0)} (${percentage.toStringAsFixed(1)}%)',
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontSize: 13,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -338,27 +434,35 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Predicted Expenses (Next Month)',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(24.0),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primaryContainer,
+                Color(0xFF4A90E2), // Bright Blue
+                Color(0xFF5DADE2), // Light Blue
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4A90E2).withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,16 +477,18 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                         'Current Month',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_currentMonthSpending.toStringAsFixed(2)}',
+                        '₱${_currentMonthSpending.toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -394,16 +500,18 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                         'Next Month',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_predictedNextMonth.toStringAsFixed(2)}',
+                        '₱${_predictedNextMonth.toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -419,14 +527,14 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.trending_up,
+                    const Icon(
+                      Icons.trending_up_rounded,
                       color: Colors.white,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Expected increase: ₱${increase.toStringAsFixed(2)} (${increasePercentage.toStringAsFixed(1)}%)',
+                      'Expected increase: ₱${increase.toStringAsFixed(0)} (${increasePercentage.toStringAsFixed(1)}%)',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -447,47 +555,64 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Inflation Impact on Budget',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Theme.of(context).colorScheme.error.withOpacity(0.3),
-              width: 2,
+              color: const Color(0xFFE74C3C).withOpacity(0.3),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Theme.of(context).colorScheme.error,
-                    size: 28,
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE74C3C).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.warning_rounded,
+                      color: Color(0xFFE74C3C),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'Current Inflation Rate',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.error,
+                      color: Colors.black87,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -497,17 +622,19 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       Text(
                         'Inflation Rate',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '${_inflationImpact.toStringAsFixed(1)}%',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.error,
+                          color: Color(0xFFE74C3C),
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -518,17 +645,19 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       Text(
                         'Additional Cost',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_inflationAmount.toStringAsFixed(2)}',
-                        style: TextStyle(
+                        '₱${_inflationAmount.toStringAsFixed(0)}',
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.error,
+                          color: Color(0xFFE74C3C),
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -539,23 +668,24 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Colors.grey.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      Icons.info_outline,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Icons.info_outline_rounded,
+                      color: Colors.grey.shade600,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Due to ${_inflationImpact.toStringAsFixed(1)}% inflation, you need an additional ₱${_inflationAmount.toStringAsFixed(2)} to maintain your current lifestyle.',
+                        'Due to ${_inflationImpact.toStringAsFixed(1)}% inflation, you need an additional ₱${_inflationAmount.toStringAsFixed(0)} to maintain your current lifestyle.',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ),

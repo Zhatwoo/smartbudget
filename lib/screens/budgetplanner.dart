@@ -84,27 +84,55 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   void _editBudget(BudgetCategory category) {
     final amountController = TextEditingController(
-      text: category.allocated.toStringAsFixed(2),
+      text: category.allocated.toStringAsFixed(0),
     );
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit Budget - ${category.name}'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: Text(
+          'Edit Budget - ${category.name}',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 labelText: 'Monthly Budget',
                 prefixText: '₱ ',
+                prefixStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4A90E2),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               ),
             ),
           ],
@@ -112,7 +140,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -133,11 +167,24 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 });
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Budget updated successfully')),
+                  const SnackBar(
+                    content: Text('Budget updated successfully'),
+                    backgroundColor: Color(0xFF27AE60),
+                  ),
                 );
               }
             },
-            child: const Text('Save'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Save',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -147,70 +194,107 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            // Back Button
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.grey),
-                onPressed: () => Navigator.of(context).pop(),
-                tooltip: 'Back',
-                alignment: Alignment.centerLeft,
+            // Custom Header (matching dashboard style)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Budget Planner',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Summary Card
-            _buildSummaryCard(),
-            const SizedBox(height: 24),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Summary Card
+                    _buildSummaryCard(),
+                    const SizedBox(height: 24),
 
-            // Alerts Section
-            if (_overspentCategories.isNotEmpty) ...[
-              _buildOverspendingAlerts(),
-              const SizedBox(height: 24),
-            ],
+                    // Alerts Section
+                    if (_overspentCategories.isNotEmpty) ...[
+                      _buildOverspendingAlerts(),
+                      const SizedBox(height: 24),
+                    ],
 
-            if (_categoriesAtRisk.isNotEmpty && _overspentCategories.isEmpty) ...[
-              _buildRiskAlerts(),
-              const SizedBox(height: 24),
-            ],
+                    if (_categoriesAtRisk.isNotEmpty && _overspentCategories.isEmpty) ...[
+                      _buildRiskAlerts(),
+                      const SizedBox(height: 24),
+                    ],
 
-            // Budget Categories Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Monthly Budget by Category',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                    // Budget Categories Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Monthly Budget by Category',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            // TODO: Add new category
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Add category feature coming soon...'),
+                                backgroundColor: Color(0xFF4A90E2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text(
+                            'Add Category',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF4A90E2),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Budget Categories List
+                    ..._budgetCategories.map((category) {
+                      return _buildBudgetCategoryCard(category);
+                    }).toList(),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    // TODO: Add new category
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Add category feature coming soon...')),
-                    );
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Category'),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
-
-            // Budget Categories List
-            ..._budgetCategories.map((category) {
-              return _buildBudgetCategoryCard(category);
-            }).toList(),
           ],
-          ),
         ),
       ),
     );
@@ -224,19 +308,19 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
     return Container(
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primaryContainer,
+            Color(0xFF4A90E2), // Bright Blue
+            Color(0xFF5DADE2), // Light Blue
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            color: const Color(0xFF4A90E2).withOpacity(0.2),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -244,14 +328,16 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Monthly Budget Summary',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white,
               fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -261,17 +347,19 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                   Text(
                     'Total Allocated',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    '₱${_totalAllocated.toStringAsFixed(2)}',
+                    '₱${_totalAllocated.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
@@ -282,58 +370,61 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                   Text(
                     'Remaining',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    '₱${_totalRemaining.toStringAsFixed(2)}',
+                    '₱${_totalRemaining.toStringAsFixed(0)}',
                     style: TextStyle(
                       color: _totalRemaining >= 0
                           ? Colors.white
-                          : Colors.red[200],
-                      fontSize: 24,
+                          : const Color(0xFFFFB3B3),
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Spent: ₱${_totalSpent.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                '${spentPercentage.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                'Spent: ₱${_totalSpent.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              Text(
+                '${spentPercentage.toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
-              value: spentPercentage / 100,
-              minHeight: 8,
+              value: spentPercentage > 100 ? 1.0 : spentPercentage / 100,
+              minHeight: 10,
               backgroundColor: Colors.white.withOpacity(0.3),
               valueColor: AlwaysStoppedAnimation<Color>(
                 spentPercentage > 100
-                    ? Colors.red[300]!
+                    ? const Color(0xFFE74C3C)
                     : spentPercentage > 80
-                        ? Colors.orange[300]!
+                        ? const Color(0xFFF39C12)
                         : Colors.white,
               ),
             ),
@@ -345,56 +436,74 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   Widget _buildOverspendingAlerts() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
-          width: 2,
+          color: const Color(0xFFE74C3C).withOpacity(0.3),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Theme.of(context).colorScheme.error,
-                size: 24,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE74C3C).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Color(0xFFE74C3C),
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 8),
-              Text(
+              const SizedBox(width: 12),
+              const Text(
                 'Overspending Alert!',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.error,
+                  color: Colors.black87,
+                  letterSpacing: -0.3,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ..._overspentCategories.map((category) {
             final overspent = category.spent - category.allocated;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.only(bottom: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     category.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 15,
+                      color: Colors.black87,
                     ),
                   ),
                   Text(
-                    'Overspent by ₱${overspent.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    'Overspent by ₱${overspent.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      color: Color(0xFFE74C3C),
                       fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -408,56 +517,74 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
   Widget _buildRiskAlerts() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
-          width: 2,
+          color: const Color(0xFFF39C12).withOpacity(0.3),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: Theme.of(context).colorScheme.tertiary,
-                size: 24,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF39C12).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFFF39C12),
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 8),
-              Text(
+              const SizedBox(width: 12),
+              const Text(
                 'Categories at Risk',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.tertiary,
+                  color: Colors.black87,
+                  letterSpacing: -0.3,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ..._categoriesAtRisk.map((category) {
             final percentage = (category.spent / category.allocated) * 100;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.only(bottom: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     category.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 15,
+                      color: Colors.black87,
                     ),
                   ),
                   Text(
                     '${percentage.toStringAsFixed(1)}% spent',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.tertiary,
+                    style: const TextStyle(
+                      color: Color(0xFFF39C12),
                       fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -479,21 +606,25 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: isOverspent
-            ? Border.all(
-                color: Theme.of(context).colorScheme.error.withOpacity(0.5),
-                width: 2,
-              )
-            : isAtRisk
-                ? Border.all(
-                    color: Theme.of(context).colorScheme.tertiary.withOpacity(0.5),
-                    width: 2,
-                  )
-                : null,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isOverspent
+              ? const Color(0xFFE74C3C).withOpacity(0.3)
+              : isAtRisk
+                  ? const Color(0xFFF39C12).withOpacity(0.3)
+                  : Colors.grey.withOpacity(0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,10 +633,11 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: category.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   category.icon,
@@ -513,35 +645,38 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       category.name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Colors.black87,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Text(
-                          'Allocated: ₱${category.allocated.toStringAsFixed(2)}',
+                          'Allocated: ₱${category.allocated.toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Spent: ₱${category.spent.toStringAsFixed(2)}',
+                          'Spent: ₱${category.spent.toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -550,17 +685,18 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(Icons.edit_rounded, size: 20),
                 onPressed: () => _editBudget(category),
                 tooltip: 'Edit Budget',
+                color: Colors.grey.shade600,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Progress Bar
+          // Progress Bar Section
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -568,13 +704,13 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Remaining: ₱${remaining.toStringAsFixed(2)}',
+                    'Remaining: ₱${remaining.toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: remaining >= 0
-                          ? Theme.of(context).colorScheme.secondary
-                          : Theme.of(context).colorScheme.error,
+                          ? const Color(0xFF27AE60)
+                          : const Color(0xFFE74C3C),
                     ),
                   ),
                   Row(
@@ -582,18 +718,18 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                       if (isOverspent)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: 10,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error,
-                            borderRadius: BorderRadius.circular(4),
+                            color: const Color(0xFFE74C3C),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'OVERSpent',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -601,18 +737,18 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                       else if (isAtRisk)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: 10,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.tertiary,
-                            borderRadius: BorderRadius.circular(4),
+                            color: const Color(0xFFF39C12),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'AT RISK',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -620,31 +756,28 @@ class _BudgetPlannerScreenState extends State<BudgetPlannerScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '${percentage.toStringAsFixed(1)}%',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: percentage > 100 ? 1.0 : percentage / 100,
                   minHeight: 10,
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withOpacity(0.2),
+                  backgroundColor: Colors.grey.withOpacity(0.15),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isOverspent
-                        ? Theme.of(context).colorScheme.error
+                        ? const Color(0xFFE74C3C)
                         : isAtRisk
-                            ? Theme.of(context).colorScheme.tertiary
+                            ? const Color(0xFFF39C12)
                             : category.color,
                   ),
                 ),

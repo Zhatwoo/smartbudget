@@ -13,6 +13,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _userName = 'John Doe';
   String _userEmail = 'john.doe@example.com';
   String _userPhone = '+63 912 345 6789';
+  String? _profilePicturePath; // Path to profile picture
 
   // Preferences
   String _selectedCurrency = 'PHP (₱)';
@@ -42,67 +43,243 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'Manual',
   ];
 
+  Future<void> _pickProfilePicture() async {
+    // TODO: Implement actual image picker
+    // For now, simulate image selection
+    // In production, use: image_picker package
+    // final ImagePicker picker = ImagePicker();
+    // final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    // Simulate image selection
+    setState(() {
+      _profilePicturePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile picture selected'),
+        backgroundColor: Color(0xFF27AE60),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _removeProfilePicture() {
+    setState(() {
+      _profilePicturePath = null;
+    });
+  }
+
   void _updateProfile() {
     final nameController = TextEditingController(text: _userName);
     final emailController = TextEditingController(text: _userEmail);
     final phoneController = TextEditingController(text: _userPhone);
+    String? tempProfilePath = _profilePicturePath;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Profile Picture Section
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4A90E2).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4A90E2).withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: tempProfilePath != null
+                            ? ClipOval(
+                                child: Image.asset(
+                                  'assets/placeholder.png', // Placeholder
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.person_rounded,
+                                      size: 50,
+                                      color: Color(0xFF4A90E2),
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
+                                Icons.person_rounded,
+                                size: 50,
+                                color: Color(0xFF4A90E2),
+                              ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4A90E2),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: Icon(
+                              tempProfilePath != null
+                                  ? Icons.edit_rounded
+                                  : Icons.add_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            onPressed: () async {
+                              // Simulate image picker
+                              setDialogState(() {
+                                tempProfilePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profile picture selected'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      if (tempProfilePath != null)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                tempProfilePath = null;
+                              });
+                            },
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE74C3C),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: nameController,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _userName = nameController.text;
+                  _userEmail = emailController.text;
+                  _userPhone = phoneController.text;
+                  _profilePicturePath = tempProfilePath;
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile updated successfully'),
+                    backgroundColor: Color(0xFF27AE60),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A90E2),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Save',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _userName = nameController.text;
-                _userEmail = emailController.text;
-                _userPhone = phoneController.text;
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile updated successfully')),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -177,331 +354,472 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          // Back Button
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.grey),
-              onPressed: () => Navigator.of(context).pop(),
-              tooltip: 'Back',
-              alignment: Alignment.centerLeft,
-            ),
-          ),
-          // User Profile Section
-          _buildSectionHeader('Profile'),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
+        child: Column(
+          children: [
+            // Custom Header (matching dashboard style)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
+              child: Row(
                 children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _userName,
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Profile',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _userEmail,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _userPhone,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _updateProfile,
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit Profile', style: TextStyle(fontSize: 16)),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        minimumSize: const Size(double.infinity, 56),
-                      ),
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Preferences Section
-          _buildSectionHeader('Preferences'),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Currency
-                ListTile(
-                  leading: const Icon(Icons.attach_money),
-                  title: const Text('Currency'),
-                  subtitle: Text(_selectedCurrency),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Select Currency'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: _currencies.map((currency) {
-                            return RadioListTile<String>(
-                              title: Text(currency),
-                              value: currency,
-                              groupValue: _selectedCurrency,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedCurrency = value!;
-                                });
-                                Navigator.of(context).pop();
-                              },
-                            );
-                          }).toList(),
-                        ),
+            // Content
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20.0),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  // User Profile Section
+                  _buildSectionHeader('Profile'),
+                  Container(
+                    padding: const EdgeInsets.all(24.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                        width: 1,
                       ),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                // Dark Mode
-                SwitchListTile(
-                  secondary: const Icon(Icons.dark_mode),
-                  title: const Text('Dark Mode'),
-                  subtitle: const Text('Enable dark theme'),
-                  value: _darkModeEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _darkModeEnabled = value;
-                    });
-                    // TODO: Implement dark mode toggle
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Notifications Section
-          _buildSectionHeader('Notifications'),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
-              ),
-            ),
-            child: Column(
-              children: [
-                SwitchListTile(
-                  secondary: const Icon(Icons.notifications),
-                  title: const Text('Enable Notifications'),
-                  subtitle: const Text('Receive app notifications'),
-                  value: _notificationsEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _notificationsEnabled = value;
-                    });
-                  },
-                ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.account_balance_wallet),
-                  title: const Text('Budget Alerts'),
-                  subtitle: const Text('Alert when approaching budget limit'),
-                  value: _budgetAlertsEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) {
-                          setState(() {
-                            _budgetAlertsEnabled = value;
-                          });
-                        }
-                      : null,
-                ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.trending_up),
-                  title: const Text('Inflation Alerts'),
-                  subtitle: const Text('Alert about price changes'),
-                  value: _inflationAlertsEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) {
-                          setState(() {
-                            _inflationAlertsEnabled = value;
-                          });
-                        }
-                      : null,
-                ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.warning),
-                  title: const Text('Spending Alerts'),
-                  subtitle: const Text('Alert about unusual spending'),
-                  value: _spendingAlertsEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) {
-                          setState(() {
-                            _spendingAlertsEnabled = value;
-                          });
-                        }
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Backup & Sync Section
-          _buildSectionHeader('Backup & Sync'),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.2),
-              ),
-            ),
-            child: Column(
-              children: [
-                SwitchListTile(
-                  secondary: const Icon(Icons.backup),
-                  title: const Text('Auto Backup'),
-                  subtitle: const Text('Automatically backup your data'),
-                  value: _autoBackupEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _autoBackupEnabled = value;
-                    });
-                  },
-                ),
-                if (_autoBackupEnabled) ...[
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.schedule),
-                    title: const Text('Backup Frequency'),
-                    subtitle: Text(_backupFrequency),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Backup Frequency'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: _backupFrequencies.map((frequency) {
-                              return RadioListTile<String>(
-                                title: Text(frequency),
-                                value: frequency,
-                                groupValue: _backupFrequency,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _backupFrequency = value!;
-                                  });
-                                  Navigator.of(context).pop();
-                                },
-                              );
-                            }).toList(),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Avatar with Profile Picture
+                        Stack(
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF4A90E2).withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: _profilePicturePath != null
+                                  ? ClipOval(
+                                      child: Image.asset(
+                                        'assets/placeholder.png', // Placeholder - replace with actual image path
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.person_rounded,
+                                            size: 50,
+                                            color: Color(0xFF4A90E2),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person_rounded,
+                                      size: 50,
+                                      color: Color(0xFF4A90E2),
+                                    ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _updateProfile,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4A90E2),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          _userName,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                      );
-                    },
+                        const SizedBox(height: 8),
+                        Text(
+                          _userEmail,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _userPhone,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: _updateProfile,
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            label: const Text(
+                              'Edit Profile',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              side: BorderSide(
+                                color: const Color(0xFF4A90E2).withOpacity(0.5),
+                                width: 1.5,
+                              ),
+                              foregroundColor: const Color(0xFF4A90E2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.cloud),
-                  title: const Text('Cloud Sync'),
-                  subtitle: const Text('Sync data with cloud storage'),
-                  value: _cloudSyncEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _cloudSyncEnabled = value;
-                    });
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.backup_outlined),
-                  title: const Text('Manual Backup'),
-                  subtitle: const Text('Create backup now'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _performBackup,
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.sync),
-                  title: const Text('Sync Now'),
-                  subtitle: const Text('Sync with cloud storage'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _cloudSyncEnabled ? _performSync : null,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-          // Logout Section
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _handleLogout,
-              icon: const Icon(Icons.logout, size: 24),
-              label: const Text('Logout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                minimumSize: const Size(double.infinity, 60),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 2,
+                  // Preferences Section
+                  _buildSectionHeader('Preferences'),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Currency
+                        _buildSettingsTile(
+                          icon: Icons.attach_money_rounded,
+                          title: 'Currency',
+                          subtitle: _selectedCurrency,
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                title: const Text(
+                                  'Select Currency',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: _currencies.map((currency) {
+                                    return RadioListTile<String>(
+                                      title: Text(currency),
+                                      value: currency,
+                                      groupValue: _selectedCurrency,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedCurrency = value!;
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        // Dark Mode
+                        _buildSwitchTile(
+                          icon: Icons.dark_mode_rounded,
+                          title: 'Dark Mode',
+                          subtitle: 'Enable dark theme',
+                          value: _darkModeEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _darkModeEnabled = value;
+                            });
+                            // TODO: Implement dark mode toggle
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Notifications Section
+                  _buildSectionHeader('Notifications'),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSwitchTile(
+                          icon: Icons.notifications_rounded,
+                          title: 'Enable Notifications',
+                          subtitle: 'Receive app notifications',
+                          value: _notificationsEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _notificationsEnabled = value;
+                            });
+                          },
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSwitchTile(
+                          icon: Icons.account_balance_wallet_rounded,
+                          title: 'Budget Alerts',
+                          subtitle: 'Alert when approaching budget limit',
+                          value: _budgetAlertsEnabled,
+                          onChanged: _notificationsEnabled
+                              ? (value) {
+                                  setState(() {
+                                    _budgetAlertsEnabled = value;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSwitchTile(
+                          icon: Icons.trending_up_rounded,
+                          title: 'Inflation Alerts',
+                          subtitle: 'Alert about price changes',
+                          value: _inflationAlertsEnabled,
+                          onChanged: _notificationsEnabled
+                              ? (value) {
+                                  setState(() {
+                                    _inflationAlertsEnabled = value;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSwitchTile(
+                          icon: Icons.warning_rounded,
+                          title: 'Spending Alerts',
+                          subtitle: 'Alert about unusual spending',
+                          value: _spendingAlertsEnabled,
+                          onChanged: _notificationsEnabled
+                              ? (value) {
+                                  setState(() {
+                                    _spendingAlertsEnabled = value;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Backup & Sync Section
+                  _buildSectionHeader('Backup & Sync'),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.15),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSwitchTile(
+                          icon: Icons.backup_rounded,
+                          title: 'Auto Backup',
+                          subtitle: 'Automatically backup your data',
+                          value: _autoBackupEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _autoBackupEnabled = value;
+                            });
+                          },
+                        ),
+                        if (_autoBackupEnabled) ...[
+                          Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                          _buildSettingsTile(
+                            icon: Icons.schedule_rounded,
+                            title: 'Backup Frequency',
+                            subtitle: _backupFrequency,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  title: const Text(
+                                    'Backup Frequency',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: _backupFrequencies.map((frequency) {
+                                      return RadioListTile<String>(
+                                        title: Text(frequency),
+                                        value: frequency,
+                                        groupValue: _backupFrequency,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _backupFrequency = value!;
+                                          });
+                                          Navigator.of(context).pop();
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSwitchTile(
+                          icon: Icons.cloud_rounded,
+                          title: 'Cloud Sync',
+                          subtitle: 'Sync data with cloud storage',
+                          value: _cloudSyncEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _cloudSyncEnabled = value;
+                            });
+                          },
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSettingsTile(
+                          icon: Icons.backup_outlined,
+                          title: 'Manual Backup',
+                          subtitle: 'Create backup now',
+                          onTap: _performBackup,
+                        ),
+                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        _buildSettingsTile(
+                          icon: Icons.sync_rounded,
+                          title: 'Sync Now',
+                          subtitle: 'Sync with cloud storage',
+                          onTap: _cloudSyncEnabled ? _performSync : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Logout Section
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _handleLogout,
+                      icon: const Icon(Icons.logout_rounded, size: 20),
+                      label: const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE74C3C),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-        ],
+          ],
         ),
       ),
     );
@@ -512,11 +830,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         title,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurface,
+          color: Colors.black87,
+          letterSpacing: -0.3,
         ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: const Color(0xFF4A90E2),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey.shade400,
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A90E2).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: const Color(0xFF4A90E2),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF4A90E2),
+          ),
+        ],
       ),
     );
   }

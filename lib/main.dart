@@ -11,6 +11,7 @@ import 'screens/analyticsReport.dart';
 import 'screens/settings.dart';
 import 'screens/predictions_screen.dart';
 import 'widgets/notifications.dart';
+import 'utils/route_transitions.dart';
 
 void main() {
   runApp(const MyApp());
@@ -105,18 +106,65 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.system,
       home: const SplashScreen(),
-      routes: {
-        '/onboarding': (context) => const OnboardingScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/transactions': (context) => const ExpensesIncomeListScreen(),
-        '/budget-planner': (context) => const BudgetPlannerScreen(),
-        '/inflation-tracker': (context) => const InflationTrackerScreen(),
-        '/predictions': (context) => const PredictionsScreen(),
-        '/smart-suggestions': (context) => const SmartSuggestionsScreen(),
-        '/analytics-report': (context) => const AnalyticsReportScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
+      onGenerateRoute: (settings) {
+        // Handle replacement routes (like login, onboarding, splash)
+        final isReplacement = settings.name == '/onboarding' || 
+                             settings.name == '/login' || 
+                             settings.name == '/home';
+
+        switch (settings.name) {
+          case '/onboarding':
+            return ImmersivePageRoute(
+              child: const OnboardingScreen(),
+              isReplacement: true,
+            );
+          case '/login':
+            return ImmersivePageRoute(
+              child: const LoginScreen(),
+              isReplacement: isReplacement,
+            );
+          case '/home':
+            return ImmersivePageRoute(
+              child: const HomeScreen(),
+              isReplacement: isReplacement,
+            );
+          case '/transactions':
+            return SlideRightPageRoute(
+              child: const ExpensesIncomeListScreen(),
+            );
+          case '/budget-planner':
+            return SlideRightPageRoute(
+              child: const BudgetPlannerScreen(),
+            );
+          case '/inflation-tracker':
+            return SlideRightPageRoute(
+              child: const InflationTrackerScreen(),
+            );
+          case '/predictions':
+            return SlideRightPageRoute(
+              child: const PredictionsScreen(),
+            );
+          case '/smart-suggestions':
+            return SlideRightPageRoute(
+              child: const SmartSuggestionsScreen(),
+            );
+          case '/analytics-report':
+            return SlideRightPageRoute(
+              child: const AnalyticsReportScreen(),
+            );
+          case '/settings':
+            return SlideRightPageRoute(
+              child: const SettingsScreen(),
+            );
+          case '/notifications':
+            return SlideRightPageRoute(
+              child: const NotificationsScreen(),
+            );
+          default:
+            return ImmersivePageRoute(
+              child: const HomeScreen(),
+            );
+        }
       },
     );
   }

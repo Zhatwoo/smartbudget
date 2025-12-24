@@ -69,6 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: Column(
           children: [
@@ -86,8 +87,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 17,
+                      color: Colors.grey.shade700,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -123,22 +124,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: SizedBox(
                 width: double.infinity,
-                height: 60,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: _nextPage,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    backgroundColor: const Color(0xFF4A90E2),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    elevation: 3,
+                    elevation: 0,
                   ),
                   child: Text(
                     _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
                     style: const TextStyle(
-                      fontSize: 19,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ),
@@ -177,10 +179,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Title
           Text(
             page.title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.black87,
+              letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
@@ -191,8 +194,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             page.description,
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Colors.grey.shade600,
               height: 1.5,
+              fontWeight: FontWeight.w400,
             ),
             textAlign: TextAlign.center,
           ),
@@ -209,8 +213,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: isActive ? 24 : 8,
       decoration: BoxDecoration(
         color: isActive
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+            ? const Color(0xFF4A90E2)
+            : Colors.grey.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
       ),
     );

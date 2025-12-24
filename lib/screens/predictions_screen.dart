@@ -39,58 +39,60 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.grey),
-                  onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Back',
-                  alignment: Alignment.centerLeft,
-                ),
+        child: Column(
+          children: [
+            // Custom Header (matching dashboard style)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
               ),
-              const SizedBox(height: 8),
-              
-              // Title
-              Row(
+              child: Row(
                 children: [
-                  Icon(
-                    Icons.auto_graph_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 28,
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
+                  const SizedBox(width: 8),
+                  const Text(
                     'Expense Predictions',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
 
-              // Summary Card
-              _buildSummaryCard(),
-              const SizedBox(height: 24),
+                    // Summary Card
+                    _buildSummaryCard(),
+                    const SizedBox(height: 24),
 
-              // Predictions Chart
-              _buildPredictionsChart(),
-              const SizedBox(height: 24),
+                    // Predictions Chart
+                    _buildPredictionsChart(),
+                    const SizedBox(height: 24),
 
-              // Monthly Breakdown
-              _buildMonthlyBreakdown(),
-            ],
-          ),
+                    // Monthly Breakdown
+                    _buildMonthlyBreakdown(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -103,36 +105,38 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
         : 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primaryContainer,
+            Color(0xFF4A90E2), // Bright Blue
+            Color(0xFF5DADE2), // Light Blue
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF4A90E2).withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Average Predicted Spending',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white,
               fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -140,19 +144,21 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₱${_averagePrediction.toStringAsFixed(2)}',
+                    '₱${_averagePrediction.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'Next ${_predictions.length} months',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -163,7 +169,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                   Row(
                     children: [
                       Icon(
-                        averageChange >= 0 ? Icons.trending_up : Icons.trending_down,
+                        averageChange >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
@@ -172,18 +178,19 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                         '${averageChangePercent >= 0 ? '+' : ''}${averageChangePercent.toStringAsFixed(1)}%',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'vs Current Month',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -201,20 +208,32 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Predicted Expenses by Month',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.15),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -277,10 +296,10 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                             const SizedBox(height: 8),
                             Text(
                               prediction.month,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: Colors.black87,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -288,7 +307,8 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                               '₱${prediction.amount.toStringAsFixed(0)}',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -309,12 +329,13 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Monthly Breakdown',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.black87,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
@@ -327,34 +348,39 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant
-                    .withOpacity(0.2),
+                color: Colors.grey.withOpacity(0.15),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 // Month
                 Container(
                   width: 60,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xFF4A90E2).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     prediction.month,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Color(0xFF4A90E2),
                     ),
                   ),
                 ),
@@ -366,31 +392,32 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '₱${prediction.amount.toStringAsFixed(2)}',
-                        style: TextStyle(
+                        '₱${prediction.amount.toStringAsFixed(0)}',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Colors.black87,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
-                            isIncrease ? Icons.arrow_upward : Icons.arrow_downward,
+                            isIncrease ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                             size: 14,
                             color: isIncrease
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).colorScheme.secondary,
+                                ? const Color(0xFFE74C3C)
+                                : const Color(0xFF27AE60),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(1)}% vs current',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: isIncrease
-                                  ? Theme.of(context).colorScheme.error
-                                  : Theme.of(context).colorScheme.secondary,
+                                  ? const Color(0xFFE74C3C)
+                                  : const Color(0xFF27AE60),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -402,18 +429,19 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                 
                 // Trend Indicator
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: isIncrease
-                        ? Theme.of(context).colorScheme.error.withOpacity(0.1)
-                        : Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                        ? const Color(0xFFE74C3C).withOpacity(0.1)
+                        : const Color(0xFF27AE60).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isIncrease ? Icons.trending_up : Icons.trending_down,
+                    isIncrease ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                     color: isIncrease
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.secondary,
+                        ? const Color(0xFFE74C3C)
+                        : const Color(0xFF27AE60),
                     size: 20,
                   ),
                 ),

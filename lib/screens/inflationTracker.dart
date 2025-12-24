@@ -96,35 +96,94 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add New Item to Track'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: const Text(
+          'Add New Item to Track',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
+              style: const TextStyle(fontSize: 15),
+              decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: 'e.g., Chicken',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: priceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              style: const TextStyle(fontSize: 15),
+              decoration: InputDecoration(
                 labelText: 'Current Price',
                 prefixText: '₱ ',
-                border: OutlineInputBorder(),
+                prefixStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4A90E2),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: unitController,
-              decoration: const InputDecoration(
+              style: const TextStyle(fontSize: 15),
+              decoration: InputDecoration(
                 labelText: 'Unit',
                 hintText: 'e.g., per kg, per liter',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
             ),
           ],
@@ -132,7 +191,13 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -148,8 +213,8 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                       unit: unitController.text.isEmpty
                           ? 'per unit'
                           : unitController.text,
-                      icon: Icons.shopping_cart,
-                      color: Colors.blue,
+                      icon: Icons.shopping_cart_rounded,
+                      color: const Color(0xFF4A90E2),
                       priceHistory: [price],
                       predictedPrices: [price * 1.02, price * 1.04, price * 1.06],
                     ),
@@ -157,11 +222,24 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                 });
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Item added successfully')),
+                  const SnackBar(
+                    content: Text('Item added successfully'),
+                    backgroundColor: Color(0xFF27AE60),
+                  ),
                 );
               }
             },
-            child: const Text('Add'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Add',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -172,10 +250,15 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         padding: const EdgeInsets.all(24.0),
         height: MediaQuery.of(context).size.height * 0.85,
         child: Column(
@@ -187,30 +270,34 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: item.color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(item.icon, color: item.color, size: 32),
+                      child: Icon(item.icon, color: item.color, size: 24),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           item.name,
-                          style: TextStyle(
-                            fontSize: 24,
+                          style: const TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: Colors.black87,
+                            letterSpacing: -0.5,
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           item.unit,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -218,8 +305,9 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close_rounded, size: 22),
                   onPressed: () => Navigator.of(context).pop(),
+                  color: Colors.grey.shade600,
                 ),
               ],
             ),
@@ -229,8 +317,12 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.15),
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -241,17 +333,19 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                       Text(
                         'Current Price',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${item.currentPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
+                        '₱${item.currentPrice.toStringAsFixed(0)}',
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Colors.black87,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -262,8 +356,9 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                       Text(
                         'Change',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -273,8 +368,8 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: item.currentPrice >= item.previousPrice
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.secondary,
+                              ? const Color(0xFFE74C3C)
+                              : const Color(0xFF27AE60),
                         ),
                       ),
                     ],
@@ -285,12 +380,13 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
             const SizedBox(height: 24),
 
             // Price History Chart
-            Text(
+            const Text(
               'Price History (Last 6 Months)',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: Colors.black87,
+                letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 16),
@@ -298,14 +394,18 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.withOpacity(0.15),
+                    width: 1.5,
+                  ),
                 ),
                 child: CustomPaint(
                   painter: LineChartPainter(
                     item.priceHistory,
                     item.color,
-                    Theme.of(context).colorScheme.onSurfaceVariant,
+                    Colors.grey.shade400,
                   ),
                   child: Container(),
                 ),
@@ -314,20 +414,32 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
             const SizedBox(height: 24),
 
             // Predicted Prices
-            Text(
+            const Text(
               'Predicted Prices (Next 3 Months)',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: Colors.black87,
+                letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.15),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -340,16 +452,17 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                         'Month ${index + 1}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${price.toStringAsFixed(2)}',
-                        style: TextStyle(
+                        '₱${price.toStringAsFixed(0)}',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Color(0xFF4A90E2),
                         ),
                       ),
                     ],
@@ -366,246 +479,280 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshPrices,
-          child: Column(
-            children: [
-              // Header with Back Button and Add Item
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.grey),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Back',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Colors.grey),
-                      onPressed: _addNewItem,
-                      tooltip: 'Add Item',
-                    ),
-                  ],
-                ),
+        child: Column(
+          children: [
+            // Custom Header (matching dashboard style)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
               ),
-              Expanded(
-                child: _trackedItems.isEmpty
-            ? Center(
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Inflation Tracker',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_rounded, color: Colors.white),
+                    onPressed: _addNewItem,
+                    tooltip: 'Add Item',
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshPrices,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.track_changes_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No items tracked yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pull down to refresh or add items',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    Expanded(
+                      child: _trackedItems.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.track_changes_outlined,
+                                    size: 64,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No items tracked yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Pull down to refresh or add items',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(20.0),
+                              itemCount: _trackedItems.length,
+                              itemBuilder: (context, index) {
+                                final item = _trackedItems[index];
+                                final percentageChange =
+                                    _calculatePercentageChange(item.currentPrice, item.previousPrice);
+                                final isIncrease = item.currentPrice >= item.previousPrice;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.grey.withOpacity(0.15),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: InkWell(
+                                    onTap: () => _viewItemDetails(item),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              // Icon
+                                              Container(
+                                                width: 48,
+                                                height: 48,
+                                                decoration: BoxDecoration(
+                                                  color: item.color.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(
+                                                  item.icon,
+                                                  color: item.color,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 14),
+
+                                              // Item Info
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.name,
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.black87,
+                                                        letterSpacing: -0.3,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      item.unit,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        color: Colors.grey.shade600,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              // Price Change Indicator
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isIncrease
+                                                      ? const Color(0xFFE74C3C).withOpacity(0.1)
+                                                      : const Color(0xFF27AE60).withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      isIncrease ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                                      size: 14,
+                                                      color: isIncrease
+                                                          ? const Color(0xFFE74C3C)
+                                                          : const Color(0xFF27AE60),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      '${percentageChange.toStringAsFixed(1)}%',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isIncrease
+                                                            ? const Color(0xFFE74C3C)
+                                                            : const Color(0xFF27AE60),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 16),
+
+                                          // Current Price
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Current Price',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey.shade600,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    '₱${item.currentPrice.toStringAsFixed(0)}',
+                                                    style: const TextStyle(
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.black87,
+                                                      letterSpacing: -0.5,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    'Previous',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey.shade600,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    '₱${item.previousPrice.toStringAsFixed(0)}',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.grey.shade600,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 16),
+
+                                          // Mini Chart
+                                          Container(
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.withOpacity(0.05),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: CustomPaint(
+                                              painter: MiniLineChartPainter(
+                                                item.priceHistory,
+                                                item.color,
+                                                Colors.grey.shade400,
+                                              ),
+                                              child: Container(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: _trackedItems.length,
-                itemBuilder: (context, index) {
-                  final item = _trackedItems[index];
-                  final percentageChange =
-                      _calculatePercentageChange(item.currentPrice, item.previousPrice);
-                  final isIncrease = item.currentPrice >= item.previousPrice;
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withOpacity(0.2),
-                      ),
-                    ),
-                    child: InkWell(
-                      onTap: () => _viewItemDetails(item),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                // Icon
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: item.color.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    item.icon,
-                                    color: item.color,
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-
-                                // Item Info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.unit,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Price Change Indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isIncrease
-                                        ? Theme.of(context).colorScheme.error.withOpacity(0.1)
-                                        : Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isIncrease ? Icons.arrow_upward : Icons.arrow_downward,
-                                        size: 16,
-                                        color: isIncrease
-                                            ? Theme.of(context).colorScheme.error
-                                            : Theme.of(context).colorScheme.secondary,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${percentageChange.toStringAsFixed(1)}%',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: isIncrease
-                                              ? Theme.of(context).colorScheme.error
-                                              : Theme.of(context).colorScheme.secondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Current Price
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Current Price',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '₱${item.currentPrice.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Previous',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '₱${item.previousPrice.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Mini Chart
-                            Container(
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: CustomPaint(
-                                painter: MiniLineChartPainter(
-                                  item.priceHistory,
-                                  item.color,
-                                  Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                child: Container(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
               ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
