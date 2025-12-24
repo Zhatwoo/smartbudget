@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/humbergersidebar.dart';
+import '../providers/providers.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  // User Profile
-  String _userName = 'John Doe';
-  String _userEmail = 'john.doe@example.com';
-  String _userPhone = '+63 912 345 6789';
-  String? _profilePicturePath; // Path to profile picture
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // Profile picture will be loaded from Firestore via provider
 
   // Preferences
   String _selectedCurrency = 'PHP (₱)';
@@ -50,31 +48,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // final ImagePicker picker = ImagePicker();
     // final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
-    // Simulate image selection
-    setState(() {
-      _profilePicturePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    });
-    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Profile picture selected'),
+        content: Text('Profile picture selection coming soon'),
         backgroundColor: Color(0xFF27AE60),
         duration: Duration(seconds: 2),
       ),
     );
   }
 
-  void _removeProfilePicture() {
-    setState(() {
-      _profilePicturePath = null;
-    });
-  }
-
   void _updateProfile() {
-    final nameController = TextEditingController(text: _userName);
-    final emailController = TextEditingController(text: _userEmail);
-    final phoneController = TextEditingController(text: _userPhone);
-    String? tempProfilePath = _profilePicturePath;
+    // Get current profile data from providers
+    final profile = ref.read(userProfileProvider).value;
+    final displayName = profile?['displayName'] as String? ?? '';
+    final email = profile?['email'] as String? ?? '';
+    final mobileNumber = profile?['mobileNumber'] as String? ?? '';
+    final username = profile?['username'] as String? ?? '';
+    
+    final nameController = TextEditingController(text: displayName);
+    final emailController = TextEditingController(text: email);
+    final phoneController = TextEditingController(text: mobileNumber);
+    final usernameController = TextEditingController(text: username);
 
     showDialog(
       context: context,
@@ -109,25 +103,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: 2,
                           ),
                         ),
-                        child: tempProfilePath != null
-                            ? ClipOval(
-                                child: Image.asset(
-                                  'assets/placeholder.png', // Placeholder
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.person_rounded,
-                                      size: 50,
-                                      color: Color(0xFF4A90E2),
-                                    );
-                                  },
-                                ),
-                              )
-                            : const Icon(
-                                Icons.person_rounded,
-                                size: 50,
-                                color: Color(0xFF4A90E2),
-                              ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          size: 50,
+                          color: Color(0xFF4A90E2),
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -145,21 +125,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           child: IconButton(
                             padding: EdgeInsets.zero,
-                            icon: Icon(
-                              tempProfilePath != null
-                                  ? Icons.edit_rounded
-                                  : Icons.add_rounded,
+                            icon: const Icon(
+                              Icons.add_rounded,
                               size: 18,
                               color: Colors.white,
                             ),
                             onPressed: () async {
-                              // Simulate image picker
-                              setDialogState(() {
-                                tempProfilePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                              });
+                              // TODO: Implement image picker
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Profile picture selected'),
+                                  content: Text('Profile picture selection coming soon'),
                                   duration: Duration(seconds: 1),
                                 ),
                               );
@@ -167,31 +142,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      if (tempProfilePath != null)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              setDialogState(() {
-                                tempProfilePath = null;
-                              });
-                            },
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE74C3C),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -224,11 +174,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: usernameController,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
-                    labelText: 'Phone Number',
+                    labelText: 'Mobile Number (Optional)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -251,20 +214,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _userName = nameController.text;
-                  _userEmail = emailController.text;
-                  _userPhone = phoneController.text;
-                  _profilePicturePath = tempProfilePath;
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated successfully'),
-                    backgroundColor: Color(0xFF27AE60),
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  final firebaseService = ref.read(firebaseServiceProvider);
+                  await firebaseService.updateUserProfile(
+                    displayName: nameController.text.trim(),
+                    username: usernameController.text.trim(),
+                    mobileNumber: phoneController.text.trim().isEmpty 
+                        ? null 
+                        : phoneController.text.trim(),
+                  );
+                  
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profile updated successfully'),
+                      backgroundColor: Color(0xFF27AE60),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating profile: ${e.toString()}'),
+                      backgroundColor: const Color(0xFFE74C3C),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A90E2),
@@ -284,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _handleLogout() {
+  void _handleLogout() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -296,8 +273,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              final authService = ref.read(authServiceProvider);
+              await authService.signOut();
+              if (!mounted) return;
               Navigator.of(context).pushReplacementNamed('/login');
             },
             style: ElevatedButton.styleFrom(
@@ -353,6 +333,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get profile data from providers
+    final profileAsync = ref.watch(userProfileProvider);
+    final displayName = ref.watch(userDisplayNameProvider);
+    final email = ref.watch(userEmailProvider);
+    final mobileNumber = ref.watch(userMobileNumberProvider);
+    final username = ref.watch(userUsernameProvider);
+    final photoUrl = ref.watch(userPhotoUrlProvider);
+    
+    // Handle loading state
+    if (profileAsync.isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFAFAFA),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
@@ -424,10 +422,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   width: 2,
                                 ),
                               ),
-                              child: _profilePicturePath != null
+                              child: photoUrl != null && photoUrl!.isNotEmpty
                                   ? ClipOval(
-                                      child: Image.asset(
-                                        'assets/placeholder.png', // Placeholder - replace with actual image path
+                                      child: Image.network(
+                                        photoUrl!,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
                                           return const Icon(
@@ -472,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          _userName,
+                          displayName ?? 'No name',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -481,23 +479,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          _userEmail,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                        if (email != null) ...[
+                          Text(
+                            email,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _userPhone,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 6),
+                        ],
+                        if (username != null) ...[
+                          Text(
+                            '@$username',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                        ],
+                        if (mobileNumber != null && mobileNumber!.isNotEmpty) ...[
+                          Text(
+                            mobileNumber!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,

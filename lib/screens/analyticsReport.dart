@@ -1,41 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import '../providers/providers.dart';
 
-class AnalyticsReportScreen extends StatefulWidget {
+class AnalyticsReportScreen extends ConsumerStatefulWidget {
   const AnalyticsReportScreen({super.key});
 
   @override
-  State<AnalyticsReportScreen> createState() => _AnalyticsReportScreenState();
+  ConsumerState<AnalyticsReportScreen> createState() => _AnalyticsReportScreenState();
 }
 
-class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
+class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
   DateTimeRange? _selectedDateRange;
-  final List<MonthlySpending> _monthlySpending = [
-    MonthlySpending(month: 'Jan', amount: 35000),
-    MonthlySpending(month: 'Feb', amount: 38000),
-    MonthlySpending(month: 'Mar', amount: 32000),
-    MonthlySpending(month: 'Apr', amount: 40000),
-    MonthlySpending(month: 'May', amount: 37000),
-    MonthlySpending(month: 'Jun', amount: 39000),
-  ];
-
-  final List<CategorySpending> _categorySpending = [
-    CategorySpending(name: 'Food', amount: 12000, color: const Color(0xFFE74C3C)),
-    CategorySpending(name: 'Transport', amount: 8000, color: const Color(0xFF4A90E2)),
-    CategorySpending(name: 'Bills', amount: 10000, color: const Color(0xFFF39C12)),
-    CategorySpending(name: 'Shopping', amount: 5000, color: const Color(0xFF27AE60)),
-    CategorySpending(name: 'Entertainment', amount: 3000, color: const Color(0xFF9B59B6)),
-    CategorySpending(name: 'Healthcare', amount: 2000, color: const Color(0xFFE67E22)),
-  ];
-
-  final double _predictedNextMonth = 41000.0;
-  final double _currentMonthSpending = 39000.0;
-  final double _inflationImpact = 5.2; // percentage
-  final double _inflationAmount = 2030.0; // additional amount due to inflation
-
-  double get _totalSpending {
-    return _categorySpending.fold(0, (sum, cat) => sum + cat.amount);
-  }
 
   Future<void> _selectDateRange() async {
     final DateTimeRange? picked = await showDateRangePicker(
@@ -98,6 +74,13 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get data from providers (UI → Provider → Service → Firebase)
+    final monthlySpending = ref.watch(monthlySpendingWithNamesProvider);
+    final categorySpending = ref.watch(categorySpendingWithColorsProvider);
+    final predictions = ref.watch(analyticsExpensePredictionsProvider);
+    final inflationImpact = ref.watch(inflationImpactProvider);
+    final totalSpending = categorySpending.fold(0.0, (sum, cat) => sum + cat.amount);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
@@ -137,107 +120,141 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
             ),
             // Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date Range Filter
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.15),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+              child: monthlySpending.isEmpty && categorySpending.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.analytics_outlined,
+                            size: 64,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No analytics data available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add transactions to see analytics',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                         ],
                       ),
-                      child: Row(
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(20.0),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Date Range Filter
                           Container(
-                            width: 36,
-                            height: 36,
+                            padding: const EdgeInsets.all(16.0),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF4A90E2).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.date_range_rounded,
-                              color: Color(0xFF4A90E2),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: InkWell(
-                              onTap: _selectDateRange,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Date Range',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _selectedDateRange == null
-                                        ? 'Last 6 months'
-                                        : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.15),
+                                width: 1.5,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.date_range_rounded,
+                                    color: Color(0xFF4A90E2),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _selectDateRange,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Date Range',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _selectedDateRange == null
+                                              ? 'Last 6 months'
+                                              : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (_selectedDateRange != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 20),
+                                    onPressed: _clearDateRange,
+                                    tooltip: 'Clear filter',
+                                    color: Colors.grey.shade600,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                              ],
                             ),
                           ),
-                          if (_selectedDateRange != null)
-                            IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 20),
-                              onPressed: _clearDateRange,
-                              tooltip: 'Clear filter',
-                              color: Colors.grey.shade600,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
+                          const SizedBox(height: 24),
+
+                          // Monthly Spending Trends
+                          if (monthlySpending.isNotEmpty) ...[
+                            _buildMonthlyTrendsSection(monthlySpending),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Category Breakdown
+                          if (categorySpending.isNotEmpty) ...[
+                            _buildCategoryBreakdownSection(categorySpending, totalSpending),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Predicted Expenses
+                          _buildPredictedExpensesSection(predictions),
+                          const SizedBox(height: 24),
+
+                          // Inflation Impact
+                          _buildInflationImpactSection(inflationImpact),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Monthly Spending Trends
-                    _buildMonthlyTrendsSection(),
-                    const SizedBox(height: 24),
-
-                    // Category Breakdown
-                    _buildCategoryBreakdownSection(),
-                    const SizedBox(height: 24),
-
-                    // Predicted Expenses
-                    _buildPredictedExpensesSection(),
-                    const SizedBox(height: 24),
-
-                    // Inflation Impact
-                    _buildInflationImpactSection(),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -245,9 +262,10 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     );
   }
 
-  Widget _buildMonthlyTrendsSection() {
-    final maxAmount = _monthlySpending.map((m) => m.amount).reduce(math.max);
-    final minAmount = _monthlySpending.map((m) => m.amount).reduce(math.min);
+  Widget _buildMonthlyTrendsSection(List<MonthlySpendingData> monthlySpending) {
+    final amounts = monthlySpending.map((m) => m.amount).toList();
+    final maxAmount = amounts.isNotEmpty ? amounts.reduce(math.max) : 0.0;
+    final minAmount = amounts.isNotEmpty ? amounts.reduce(math.min) : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,7 +303,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                 height: 200,
                 child: CustomPaint(
                   painter: LineChartPainter(
-                    _monthlySpending.map((m) => m.amount).toList(),
+                    amounts,
                     const Color(0xFF4A90E2),
                     Colors.grey.shade400,
                   ),
@@ -295,7 +313,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: _monthlySpending.map((month) {
+                children: monthlySpending.map((month) {
                   return Column(
                     children: [
                       Text(
@@ -326,7 +344,10 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     );
   }
 
-  Widget _buildCategoryBreakdownSection() {
+  Widget _buildCategoryBreakdownSection(
+    List<CategorySpendingData> categorySpending,
+    double totalSpending,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -364,7 +385,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                 width: 150,
                 height: 150,
                 child: CustomPaint(
-                  painter: PieChartPainter(_categorySpending, _totalSpending),
+                  painter: PieChartPainter(categorySpending, totalSpending),
                   child: Container(),
                 ),
               ),
@@ -372,9 +393,9 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
               // Legend
               Expanded(
                 child: Column(
-                  children: _categorySpending.map((category) {
-                    final percentage = (_totalSpending > 0)
-                        ? (category.amount / _totalSpending) * 100
+                  children: categorySpending.map((category) {
+                    final percentage = (totalSpending > 0)
+                        ? (category.amount / totalSpending) * 100
                         : 0;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12.0),
@@ -425,11 +446,11 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     );
   }
 
-  Widget _buildPredictedExpensesSection() {
-    final increase = _predictedNextMonth - _currentMonthSpending;
-    final increasePercentage = (_currentMonthSpending > 0)
-        ? (increase / _currentMonthSpending) * 100
-        : 0;
+  Widget _buildPredictedExpensesSection(Map<String, dynamic> predictions) {
+    final predictedNextMonth = predictions['predictedNextMonth'] as double;
+    final currentMonthSpending = predictions['currentMonth'] as double;
+    final increase = predictions['change'] as double;
+    final increasePercentage = predictions['changePercent'] as double;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,7 +504,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_currentMonthSpending.toStringAsFixed(0)}',
+                        '₱${currentMonthSpending.toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -506,7 +527,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_predictedNextMonth.toStringAsFixed(0)}',
+                        '₱${predictedNextMonth.toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -527,14 +548,16 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.trending_up_rounded,
+                    Icon(
+                      increase >= 0
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
                       color: Colors.white,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Expected increase: ₱${increase.toStringAsFixed(0)} (${increasePercentage.toStringAsFixed(1)}%)',
+                      'Expected ${increase >= 0 ? 'increase' : 'decrease'}: ₱${increase.abs().toStringAsFixed(0)} (${increasePercentage.abs().toStringAsFixed(1)}%)',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -551,7 +574,10 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
     );
   }
 
-  Widget _buildInflationImpactSection() {
+  Widget _buildInflationImpactSection(Map<String, dynamic> inflationImpact) {
+    final inflationRate = inflationImpact['inflationRate'] as double;
+    final inflationAmount = inflationImpact['inflationAmount'] as double;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -629,7 +655,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${_inflationImpact.toStringAsFixed(1)}%',
+                        '${inflationRate.toStringAsFixed(1)}%',
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -652,7 +678,7 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${_inflationAmount.toStringAsFixed(0)}',
+                        '₱${inflationAmount.toStringAsFixed(0)}',
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -664,34 +690,36 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      color: Colors.grey.shade600,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Due to ${_inflationImpact.toStringAsFixed(1)}% inflation, you need an additional ₱${_inflationAmount.toStringAsFixed(0)} to maintain your current lifestyle.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w400,
+              if (inflationRate > 0) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Colors.grey.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Due to ${inflationRate.toStringAsFixed(1)}% inflation, you need an additional ₱${inflationAmount.toStringAsFixed(0)} to maintain your current lifestyle.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -702,26 +730,6 @@ class _AnalyticsReportScreenState extends State<AnalyticsReportScreen> {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
-}
-
-// Data Models
-class MonthlySpending {
-  final String month;
-  final double amount;
-
-  MonthlySpending({required this.month, required this.amount});
-}
-
-class CategorySpending {
-  final String name;
-  final double amount;
-  final Color color;
-
-  CategorySpending({
-    required this.name,
-    required this.amount,
-    required this.color,
-  });
 }
 
 // Line Chart Painter
@@ -791,13 +799,15 @@ class LineChartPainter extends CustomPainter {
 
 // Pie Chart Painter
 class PieChartPainter extends CustomPainter {
-  final List<CategorySpending> categories;
+  final List<CategorySpendingData> categories;
   final double total;
 
   PieChartPainter(this.categories, this.total);
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (total == 0 || categories.isEmpty) return;
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
 
@@ -825,4 +835,3 @@ class PieChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

@@ -1,43 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import '../providers/providers.dart';
 
-class PredictionsScreen extends StatefulWidget {
+class PredictionsScreen extends ConsumerWidget {
   const PredictionsScreen({super.key});
 
   @override
-  State<PredictionsScreen> createState() => _PredictionsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get data from providers (UI → Provider → Service → Firebase)
+    final predictions = ref.watch(monthlyPredictionsProvider);
+    final currentMonthSpending = ref.watch(currentMonthSpendingProvider);
+    final futureSpending = ref.watch(futureSpendingPredictionProvider);
 
-class _PredictionsScreenState extends State<PredictionsScreen> {
-  final List<Prediction> _predictions = [
-    Prediction(month: 'Jan', amount: 35000),
-    Prediction(month: 'Feb', amount: 38000),
-    Prediction(month: 'Mar', amount: 32000),
-    Prediction(month: 'Apr', amount: 40000),
-    Prediction(month: 'May', amount: 37000),
-    Prediction(month: 'Jun', amount: 39000),
-  ];
+    // Calculate statistics
+    final averagePrediction = predictions.isEmpty
+        ? 0.0
+        : predictions.fold(0.0, (sum, p) => sum + p.amount) / predictions.length;
+    
+    final maxPrediction = predictions.isEmpty
+        ? 0.0
+        : predictions.map((p) => p.amount).reduce(math.max);
+    
+    final minPrediction = predictions.isEmpty
+        ? 0.0
+        : predictions.map((p) => p.amount).reduce(math.min);
 
-  final double _currentMonthSpending = 35000.0;
-
-  double get _averagePrediction {
-    if (_predictions.isEmpty) return 0.0;
-    final sum = _predictions.fold(0.0, (total, p) => total + p.amount);
-    return sum / _predictions.length;
-  }
-
-  double get _maxPrediction {
-    if (_predictions.isEmpty) return 0.0;
-    return _predictions.map((p) => p.amount).reduce(math.max);
-  }
-
-  double get _minPrediction {
-    if (_predictions.isEmpty) return 0.0;
-    return _predictions.map((p) => p.amount).reduce(math.min);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
@@ -70,27 +58,60 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
             ),
             // Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: predictions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.trending_up_outlined,
+                            size: 64,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No predictions available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add transactions to see predictions',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(20.0),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Summary Card
+                          _buildSummaryCard(
+                            averagePrediction,
+                            currentMonthSpending,
+                            predictions.length,
+                          ),
+                          const SizedBox(height: 24),
 
-                    // Summary Card
-                    _buildSummaryCard(),
-                    const SizedBox(height: 24),
+                          // Predictions Chart
+                          _buildPredictionsChart(predictions, maxPrediction),
+                          const SizedBox(height: 24),
 
-                    // Predictions Chart
-                    _buildPredictionsChart(),
-                    const SizedBox(height: 24),
-
-                    // Monthly Breakdown
-                    _buildMonthlyBreakdown(),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
+                          // Monthly Breakdown
+                          _buildMonthlyBreakdown(predictions, currentMonthSpending),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -98,10 +119,14 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     );
   }
 
-  Widget _buildSummaryCard() {
-    final averageChange = _averagePrediction - _currentMonthSpending;
-    final averageChangePercent = _currentMonthSpending > 0
-        ? (averageChange / _currentMonthSpending) * 100
+  Widget _buildSummaryCard(
+    double averagePrediction,
+    double currentMonthSpending,
+    int numberOfMonths,
+  ) {
+    final averageChange = averagePrediction - currentMonthSpending;
+    final averageChangePercent = currentMonthSpending > 0
+        ? (averageChange / currentMonthSpending) * 100
         : 0.0;
 
     return Container(
@@ -144,7 +169,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₱${_averagePrediction.toStringAsFixed(0)}',
+                    '₱${averagePrediction.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -154,7 +179,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Next ${_predictions.length} months',
+                    'Next $numberOfMonths months',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 12,
@@ -169,7 +194,9 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                   Row(
                     children: [
                       Icon(
-                        averageChange >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        averageChange >= 0
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
@@ -202,9 +229,10 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     );
   }
 
-  Widget _buildPredictionsChart() {
-    final maxAmount = _maxPrediction;
-
+  Widget _buildPredictionsChart(
+    List<MonthlyPrediction> predictions,
+    double maxAmount,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -242,10 +270,12 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _predictions.asMap().entries.map((entry) {
+                  children: predictions.asMap().entries.map((entry) {
                     final index = entry.key;
                     final prediction = entry.value;
-                    final height = maxAmount > 0 ? (prediction.amount / maxAmount) * 200 : 0.0;
+                    final height = maxAmount > 0
+                        ? (prediction.amount / maxAmount) * 200
+                        : 0.0;
                     final colors = [
                       [const Color(0xFF4A90E2), const Color(0xFF5DADE2)],
                       [const Color(0xFF27AE60), const Color(0xFF2ECC71)],
@@ -255,7 +285,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                       [const Color(0xFF16A085), const Color(0xFF138D75)],
                     ];
                     final barColors = colors[index % colors.length];
-                    
+
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6.0),
@@ -325,7 +355,10 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     );
   }
 
-  Widget _buildMonthlyBreakdown() {
+  Widget _buildMonthlyBreakdown(
+    List<MonthlyPrediction> predictions,
+    double currentMonthSpending,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -339,10 +372,10 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ..._predictions.map((prediction) {
-          final change = prediction.amount - _currentMonthSpending;
-          final changePercent = _currentMonthSpending > 0
-              ? (change / _currentMonthSpending) * 100
+        ...predictions.map((prediction) {
+          final change = prediction.amount - currentMonthSpending;
+          final changePercent = currentMonthSpending > 0
+              ? (change / currentMonthSpending) * 100
               : 0.0;
           final isIncrease = change >= 0;
 
@@ -385,7 +418,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Amount and Change
                 Expanded(
                   child: Column(
@@ -404,7 +437,9 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                       Row(
                         children: [
                           Icon(
-                            isIncrease ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                            isIncrease
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
                             size: 14,
                             color: isIncrease
                                 ? const Color(0xFFE74C3C)
@@ -426,7 +461,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Trend Indicator
                 Container(
                   width: 40,
@@ -438,7 +473,9 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isIncrease ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                    isIncrease
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
                     color: isIncrease
                         ? const Color(0xFFE74C3C)
                         : const Color(0xFF27AE60),
@@ -453,15 +490,3 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     );
   }
 }
-
-// Prediction Model
-class Prediction {
-  final String month;
-  final double amount;
-
-  Prediction({
-    required this.month,
-    required this.amount,
-  });
-}
-

@@ -1,71 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import '../providers/providers.dart';
+import '../models/inflation_item_model.dart';
+import '../services/inflation_service.dart';
 
-class InflationTrackerScreen extends StatefulWidget {
+/// Helper function to convert icon string to IconData
+IconData _getIconFromString(String iconString) {
+  final iconMap = {
+    'rice_bowl': Icons.rice_bowl,
+    'local_drink': Icons.local_drink,
+    'egg': Icons.egg,
+    'local_gas_station': Icons.local_gas_station,
+    'breakfast_dining': Icons.breakfast_dining,
+    'shopping_cart': Icons.shopping_cart_rounded,
+  };
+  return iconMap[iconString] ?? Icons.shopping_cart_rounded;
+}
+
+/// Helper function to convert color string to Color
+Color _getColorFromString(String colorString) {
+  try {
+    return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
+  } catch (e) {
+    return const Color(0xFF4A90E2);
+  }
+}
+
+class InflationTrackerScreen extends ConsumerStatefulWidget {
   const InflationTrackerScreen({super.key});
 
   @override
-  State<InflationTrackerScreen> createState() => _InflationTrackerScreenState();
+  ConsumerState<InflationTrackerScreen> createState() => _InflationTrackerScreenState();
 }
 
-class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
-  final List<TrackedItem> _trackedItems = [
-    TrackedItem(
-      id: '1',
-      name: 'Rice',
-      currentPrice: 55.00,
-      previousPrice: 52.00,
-      unit: 'per kg',
-      icon: Icons.rice_bowl,
-      color: const Color(0xFFE74C3C),
-      priceHistory: [50.0, 51.0, 52.0, 53.0, 54.0, 55.0],
-      predictedPrices: [56.0, 57.0, 58.0],
-    ),
-    TrackedItem(
-      id: '2',
-      name: 'Milk',
-      currentPrice: 85.00,
-      previousPrice: 82.00,
-      unit: 'per liter',
-      icon: Icons.local_drink,
-      color: const Color(0xFF4A90E2),
-      priceHistory: [80.0, 81.0, 82.0, 83.0, 84.0, 85.0],
-      predictedPrices: [86.0, 87.0, 88.0],
-    ),
-    TrackedItem(
-      id: '3',
-      name: 'Eggs',
-      currentPrice: 8.50,
-      previousPrice: 8.00,
-      unit: 'per piece',
-      icon: Icons.egg,
-      color: const Color(0xFFF39C12),
-      priceHistory: [7.5, 7.8, 8.0, 8.2, 8.4, 8.5],
-      predictedPrices: [8.7, 8.9, 9.0],
-    ),
-    TrackedItem(
-      id: '4',
-      name: 'Gasoline',
-      currentPrice: 65.50,
-      previousPrice: 63.00,
-      unit: 'per liter',
-      icon: Icons.local_gas_station,
-      color: const Color(0xFF27AE60),
-      priceHistory: [60.0, 61.5, 63.0, 64.0, 64.5, 65.5],
-      predictedPrices: [66.0, 67.0, 68.0],
-    ),
-    TrackedItem(
-      id: '5',
-      name: 'Bread',
-      currentPrice: 45.00,
-      previousPrice: 43.00,
-      unit: 'per loaf',
-      icon: Icons.breakfast_dining,
-      color: const Color(0xFF9B59B6),
-      priceHistory: [42.0, 42.5, 43.0, 43.5, 44.0, 45.0],
-      predictedPrices: [45.5, 46.0, 46.5],
-    ),
-  ];
+class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen> {
 
   double _calculatePercentageChange(double current, double previous) {
     if (previous == 0) return 0;
@@ -73,18 +42,52 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
   }
 
   Future<void> _refreshPrices() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
     
-    // TODO: Fetch latest prices from API
-    setState(() {
-      // Update prices (simulated)
-    });
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Updating prices...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
     
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prices updated')),
-      );
+    try {
+      final inflationService = ref.read(inflationServiceProvider);
+      await inflationService.refreshAllPrices();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Prices updated'),
+            backgroundColor: Color(0xFF27AE60),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error updating prices';
+        final errorString = e.toString();
+        
+        // Provide user-friendly error messages
+        if (errorString.contains('API key not configured')) {
+          errorMessage = 'API key not configured. Please set up your API Ninjas key in the configuration.';
+        } else if (errorString.contains('Unable to fetch')) {
+          errorMessage = 'Unable to fetch inflation data. Please check your internet connection and API key.';
+        } else if (errorString.contains('timeout') || errorString.contains('Timeout')) {
+          errorMessage = 'Request timed out. Please try again later.';
+        } else {
+          errorMessage = 'Error updating prices: ${errorString.length > 50 ? errorString.substring(0, 50) + "..." : errorString}';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: const Color(0xFFE74C3C),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -92,23 +95,36 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final unitController = TextEditingController();
+    IconData selectedIcon = Icons.shopping_cart_rounded;
+    Color selectedColor = const Color(0xFF4A90E2);
+    
+    final iconOptions = [
+      {'icon': Icons.rice_bowl, 'color': const Color(0xFFE74C3C), 'name': 'Rice'},
+      {'icon': Icons.local_drink, 'color': const Color(0xFF4A90E2), 'name': 'Milk'},
+      {'icon': Icons.egg, 'color': const Color(0xFFF39C12), 'name': 'Eggs'},
+      {'icon': Icons.local_gas_station, 'color': const Color(0xFF27AE60), 'name': 'Gasoline'},
+      {'icon': Icons.breakfast_dining, 'color': const Color(0xFF9B59B6), 'name': 'Bread'},
+      {'icon': Icons.shopping_cart_rounded, 'color': const Color(0xFF4A90E2), 'name': 'Other'},
+    ];
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        title: const Text(
-          'Add New Item to Track',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          title: const Text(
+            'Add New Item to Track',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             TextField(
               controller: nameController,
               style: const TextStyle(fontSize: 15),
@@ -186,45 +202,106 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
             ),
+            const SizedBox(height: 16),
+            // Icon selection
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: iconOptions.map((option) {
+                final isSelected = option['icon'] == selectedIcon;
+                return GestureDetector(
+                  onTap: () {
+                    setDialogState(() {
+                      selectedIcon = option['icon'] as IconData;
+                      selectedColor = option['color'] as Color;
+                    });
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (option['color'] as Color).withOpacity(0.2)
+                          : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? option['color'] as Color
+                            : Colors.grey.withOpacity(0.3),
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Icon(
+                      option['icon'] as IconData,
+                      color: option['color'] as Color,
+                      size: 24,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w600,
+      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
+            ElevatedButton(
+            onPressed: () async {
               final price = double.tryParse(priceController.text);
               if (nameController.text.isNotEmpty && price != null && price > 0) {
-                setState(() {
-                  _trackedItems.add(
-                    TrackedItem(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: nameController.text,
-                      currentPrice: price,
-                      previousPrice: price,
-                      unit: unitController.text.isEmpty
-                          ? 'per unit'
-                          : unitController.text,
-                      icon: Icons.shopping_cart_rounded,
-                      color: const Color(0xFF4A90E2),
-                      priceHistory: [price],
-                      predictedPrices: [price * 1.02, price * 1.04, price * 1.06],
-                    ),
+                try {
+                  final inflationService = ref.read(inflationServiceProvider);
+                  
+                  // Convert IconData to string (using codePoint)
+                  final iconString = _getIconStringFromIconData(selectedIcon);
+                  final colorString = '#${selectedColor.value.toRadixString(16).substring(2)}';
+                  
+                  final item = InflationItemModel(
+                    name: nameController.text,
+                    unit: unitController.text.isEmpty ? 'per unit' : unitController.text,
+                    currentPrice: price,
+                    previousPrice: price,
+                    priceHistory: [price],
+                    predictedPrices: [price * 1.02, price * 1.04, price * 1.06],
+                    color: colorString,
+                    icon: iconString,
                   );
-                });
-                Navigator.of(context).pop();
+                  
+                  await inflationService.saveInflationItem(item);
+                  
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Item added successfully'),
+                        backgroundColor: Color(0xFF27AE60),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error adding item: ${e.toString()}'),
+                        backgroundColor: const Color(0xFFE74C3C),
+                      ),
+                    );
+                  }
+                }
+              } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Item added successfully'),
-                    backgroundColor: Color(0xFF27AE60),
+                    content: Text('Please fill in all required fields'),
+                    backgroundColor: Color(0xFFE74C3C),
                   ),
                 );
               }
@@ -242,11 +319,25 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
             ),
           ),
         ],
+        ),
       ),
-    );
+      );
   }
 
-  void _viewItemDetails(TrackedItem item) {
+  /// Helper to convert IconData to string
+  String _getIconStringFromIconData(IconData icon) {
+    final iconMap = {
+      Icons.rice_bowl: 'rice_bowl',
+      Icons.local_drink: 'local_drink',
+      Icons.egg: 'egg',
+      Icons.local_gas_station: 'local_gas_station',
+      Icons.breakfast_dining: 'breakfast_dining',
+      Icons.shopping_cart_rounded: 'shopping_cart',
+    };
+    return iconMap[icon] ?? 'shopping_cart';
+  }
+
+  void _viewItemDetails(InflationItemModel item) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -273,10 +364,14 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: item.color.withOpacity(0.1),
+                        color: _getColorFromString(item.color).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(item.icon, color: item.color, size: 24),
+                      child: Icon(
+                        _getIconFromString(item.icon),
+                        color: _getColorFromString(item.color),
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Column(
@@ -404,7 +499,7 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                 child: CustomPaint(
                   painter: LineChartPainter(
                     item.priceHistory,
-                    item.color,
+                    _getColorFromString(item.color),
                     Colors.grey.shade400,
                   ),
                   child: Container(),
@@ -478,6 +573,8 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inflationItemsAsync = ref.watch(inflationItemsProvider);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
@@ -519,44 +616,45 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refreshPrices,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: _trackedItems.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.track_changes_outlined,
-                                    size: 64,
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No items tracked yet',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Pull down to refresh or add items',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
+                child: inflationItemsAsync.when(
+                  data: (items) {
+                    if (items.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.track_changes_outlined,
+                              size: 64,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No items tracked yet',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(20.0),
-                              itemCount: _trackedItems.length,
-                              itemBuilder: (context, index) {
-                                final item = _trackedItems[index];
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Pull down to refresh or add items',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(20.0),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
                                 final percentageChange =
                                     _calculatePercentageChange(item.currentPrice, item.previousPrice);
                                 final isIncrease = item.currentPrice >= item.previousPrice;
@@ -593,12 +691,12 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                                                 width: 48,
                                                 height: 48,
                                                 decoration: BoxDecoration(
-                                                  color: item.color.withOpacity(0.1),
+                                                  color: _getColorFromString(item.color).withOpacity(0.1),
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Icon(
-                                                  item.icon,
-                                                  color: item.color,
+                                                  _getIconFromString(item.icon),
+                                                  color: _getColorFromString(item.color),
                                                   size: 24,
                                                 ),
                                               ),
@@ -734,7 +832,7 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                                             child: CustomPaint(
                                               painter: MiniLineChartPainter(
                                                 item.priceHistory,
-                                                item.color,
+                                                _getColorFromString(item.color),
                                                 Colors.grey.shade400,
                                               ),
                                               child: Container(),
@@ -746,9 +844,41 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
                                   ),
                                 );
                               },
-                            ),
+                            );
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading items',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error.toString(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -757,31 +887,6 @@ class _InflationTrackerScreenState extends State<InflationTrackerScreen> {
       ),
     );
   }
-}
-
-// Tracked Item Model
-class TrackedItem {
-  final String id;
-  final String name;
-  final double currentPrice;
-  final double previousPrice;
-  final String unit;
-  final IconData icon;
-  final Color color;
-  final List<double> priceHistory;
-  final List<double> predictedPrices;
-
-  TrackedItem({
-    required this.id,
-    required this.name,
-    required this.currentPrice,
-    required this.previousPrice,
-    required this.unit,
-    required this.icon,
-    required this.color,
-    required this.priceHistory,
-    required this.predictedPrices,
-  });
 }
 
 // Line Chart Painter for Price History

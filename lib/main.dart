@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/registerScreen.dart';
 import 'screens/home_screen.dart';
 import 'screens/expensesincomelist.dart';
 import 'screens/budgetplanner.dart';
@@ -13,8 +16,14 @@ import 'screens/predictions_screen.dart';
 import 'widgets/notifications.dart';
 import 'utils/route_transitions.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -121,6 +130,11 @@ class MyApp extends StatelessWidget {
           case '/login':
             return ImmersivePageRoute(
               child: const LoginScreen(),
+              isReplacement: isReplacement,
+            );
+          case '/register':
+            return ImmersivePageRoute(
+              child: const RegisterScreen(),
               isReplacement: isReplacement,
             );
           case '/home':

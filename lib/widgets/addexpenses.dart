@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
+import '../models/transaction_model.dart';
 
-class AddExpenseIncomeScreen extends StatefulWidget {
+class AddExpenseIncomeScreen extends ConsumerStatefulWidget {
   const AddExpenseIncomeScreen({super.key});
 
   @override
-  State<AddExpenseIncomeScreen> createState() => _AddExpenseIncomeScreenState();
+  ConsumerState<AddExpenseIncomeScreen> createState() => _AddExpenseIncomeScreenState();
 }
 
-class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
+class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
@@ -16,6 +19,7 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isExpense = true; // true for expense, false for income
   String? _receiptPath;
+  bool _isSaving = false;
 
   final List<String> _expenseCategories = [
     'Food',
@@ -102,6 +106,12 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
         return;
       }
 
+      if (_isSaving) return; // Prevent double save
+
+      setState(() {
+        _isSaving = true;
+      });
+
       // Show loading
       showDialog(
         context: context,
@@ -111,29 +121,73 @@ class _AddExpenseIncomeScreenState extends State<AddExpenseIncomeScreen> {
         ),
       );
 
-      // Simulate saving to database/local storage
-      await Future.delayed(const Duration(seconds: 1));
+      try {
+        // Parse amount
+        final amount = double.parse(_amountController.text.trim());
+        
+        // Create transaction model
+        final transaction = TransactionModel(
+          title: _selectedCategory!,
+          category: _selectedCategory!,
+          amount: _isExpense ? -amount : amount, // Negative for expense, positive for income
+          date: _selectedDate,
+          type: _isExpense ? 'expense' : 'income',
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          receiptUrl: _receiptPath,
+        );
 
-      if (!mounted) return;
+        // Save via TransactionService (UI → Provider → Service → Firebase)
+        final transactionService = ref.read(transactionServiceProvider);
+        await transactionService.addTransaction(transaction);
 
-      // Close loading dialog
-      Navigator.of(context).pop();
+        if (!mounted) return;
 
-      // TODO: Save to actual database/local storage
-      // For now, just show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isExpense
-                ? 'Expense saved successfully!'
-                : 'Income saved successfully!',
+        // Close loading dialog
+        Navigator.of(context).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isExpense
+                  ? 'Expense saved successfully!'
+                  : 'Income saved successfully!',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-        ),
-      );
+        );
 
-      // Close the screen and return to home
-      Navigator.of(context).pop(true); // Return true to indicate data was saved
+        // Close the screen and return to home
+        Navigator.of(context).pop(true); // Return true to indicate data was saved
+      } catch (e) {
+        if (!mounted) return;
+
+        // Close loading dialog
+        Navigator.of(context).pop();
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving transaction: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
+      }
     }
   }
 

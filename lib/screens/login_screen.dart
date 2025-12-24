@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoginMode = true;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -47,42 +50,149 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      try {
+        final authService = ref.read(authServiceProvider);
+        final firebaseService = ref.read(firebaseServiceProvider);
+        
+        if (_isLoginMode) {
+          // Sign in
+          await authService.signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+        } else {
+          // Register - create user and profile
+          // Note: For full registration with username, user should use RegisterScreen
+          // This is kept for backward compatibility
+          final credential = await authService.registerWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+          
+          // Create Firestore user document if new (as per workflow)
+          if (credential.user != null) {
+            await firebaseService.initializeUserProfile(
+              email: _emailController.text.trim(),
+              displayName: credential.user!.displayName ?? _emailController.text.trim().split('@')[0],
+              photoUrl: credential.user!.photoURL,
+              username: _emailController.text.trim(), // Default username to email
+              authMethod: 'email',
+            );
+          }
+        }
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+        // Success - navigate to home
+        Navigator.of(context).pushReplacementNamed('/home');
+      } catch (e) {
+        if (!mounted) return;
 
-      // TEST MODE: Accept any valid email/password combination
-      // TODO: Replace with actual authentication logic in production
-      // For testing, any email format and password (min 6 chars) will work
-      Navigator.of(context).pushReplacementNamed('/home');
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+
+        // Show error snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage ?? 'An error occurred'),
+            backgroundColor: const Color(0xFFE74C3C),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _handleSocialLogin(String provider) async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate social login
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final authService = ref.read(authServiceProvider);
+      final firebaseService = ref.read(firebaseServiceProvider);
+      
+      if (provider == 'google') {
+        // Sign in with Google
+        final credential = await authService.signInWithGoogle();
+        
+        // Create Firestore user document if new (as per workflow)
+        // Extract Gmail name and use email as default username
+        if (credential.user != null) {
+          final gmailName = credential.user!.displayName ?? '';
+          final gmailEmail = credential.user!.email ?? '';
+          
+          await firebaseService.initializeUserProfile(
+            email: gmailEmail,
+            displayName: gmailName.isNotEmpty ? gmailName : gmailEmail.split('@')[0],
+            photoUrl: credential.user!.photoURL,
+            username: gmailEmail, // Email becomes default username
+            authMethod: 'gmail',
+          );
+        }
+        
+        if (!mounted) return;
+        
+        // Success - navigate to home
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        // Facebook login - coming soon
+        if (!mounted) return;
 
-    if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
 
-    setState(() {
-      _isLoading = false;
-    });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$provider login coming soon!'),
+            backgroundColor: const Color(0xFF4A90E2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
 
-    // TEST MODE: Accept any social login
-    // TODO: Implement actual social login logic in production
-    // For testing, any social login will work
-    Navigator.of(context).pushReplacementNamed('/home');
+      String errorMsg = e.toString().replaceAll('Exception: ', '');
+      
+      // Provide more helpful error message for Google Sign-In
+      if (errorMsg.contains('ApiException') || 
+          errorMsg.contains('sign_in_failed') ||
+          errorMsg.contains('PlatformException')) {
+        errorMsg = 'Google Sign-In not configured properly.\n\nPlease:\n1. Enable Google Sign-In in Firebase Console\n2. Add SHA-1 fingerprint\n3. Download updated google-services.json';
+      }
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = errorMsg;
+      });
+
+      // Show error snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: const Color(0xFFE74C3C),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _handleTestAccount() async {
@@ -92,22 +202,46 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final authService = ref.read(authServiceProvider);
+      // Try to sign in with test account
+      await authService.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      // Success - navigate to home
+      Navigator.of(context).pushReplacementNamed('/home');
+    } catch (e) {
+      if (!mounted) return;
 
-    // Navigate to home
-    Navigator.of(context).pushReplacementNamed('/home');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Test account not found. Please create an account first.';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage ?? 'An error occurred'),
+          backgroundColor: const Color(0xFFE74C3C),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   void _handleForgotPassword() {
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -121,9 +255,40 @@ class _LoginScreenState extends State<LoginScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
-          'Enter your email address and we\'ll send you a link to reset your password.',
-          style: TextStyle(fontSize: 15),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your email address and we\'ll send you a link to reset your password.',
+                style: TextStyle(fontSize: 15),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'Enter your email',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                  if (!emailRegex.hasMatch(value)) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -137,15 +302,33 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Implement forgot password functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password reset link sent to your email'),
-                  backgroundColor: Color(0xFF4A90E2),
-                ),
-              );
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  final authService = ref.read(authServiceProvider);
+                  await authService.resetPassword(emailController.text.trim());
+                  if (!mounted) return;
+                  
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset link sent to your email'),
+                      backgroundColor: Color(0xFF4A90E2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: const Color(0xFFE74C3C),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A90E2),
@@ -317,6 +500,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
+                // Error Message
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE74C3C).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFE74C3C).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Color(0xFFE74C3C),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Color(0xFFE74C3C),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 24),
 
                 // Submit Button
@@ -474,7 +691,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Register Button (only in login mode)
+                if (_isLoginMode) ...[
+                  SizedBox(
+                    height: 56,
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : () {
+                        Navigator.of(context).pushNamed('/register');
+                      },
+                      icon: const Icon(Icons.person_add_outlined, size: 22),
+                      label: const Text(
+                        'Create New Account',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF4A90E2),
+                        side: const BorderSide(
+                          color: Color(0xFF4A90E2),
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Toggle Login/Sign Up
                 Row(
@@ -482,8 +731,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       _isLoginMode
-                          ? 'Don\'t have an account? '
-                          : 'Already have an account? ',
+                          ? 'Already have an account? '
+                          : 'Don\'t have an account? ',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 15,
@@ -491,13 +740,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        setState(() {
-                          _isLoginMode = !_isLoginMode;
-                          _formKey.currentState?.reset();
-                        });
+                        if (_isLoginMode) {
+                          // Navigate to register screen
+                          Navigator.of(context).pushNamed('/register');
+                        } else {
+                          setState(() {
+                            _isLoginMode = true;
+                            _formKey.currentState?.reset();
+                          });
+                        }
                       },
                       child: Text(
-                        _isLoginMode ? 'Sign Up' : 'Sign In',
+                        _isLoginMode ? 'Sign In' : 'Sign Up',
                         style: const TextStyle(
                           color: Color(0xFF4A90E2),
                           fontWeight: FontWeight.bold,
