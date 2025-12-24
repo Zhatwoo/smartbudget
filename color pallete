@@ -1,0 +1,52 @@
+## **1. Primary Colors (Brand / Main UI)**
+
+| Purpose | Color | Hex |
+| --- | --- | --- |
+| Primary buttons / highlights | Blue | `#4A90E2` |
+| Headers / Top bar | Dark Blue | `#003366` |
+| Positive balance / success | Green | `#27AE60` |
+
+---
+
+## **2. Secondary / Accent Colors**
+
+| Purpose | Color | Hex |
+| --- | --- | --- |
+| Warning / Budget overspend | Orange | `#F39C12` |
+| Negative balance / expense alerts | Red | `#E74C3C` |
+| Neutral / info | Light Blue | `#5DADE2` |
+
+---
+
+## **3. Background / Cards**
+
+| Purpose | Color | Hex |
+| --- | --- | --- |
+| Main background | Off-White | `#FAFAFA` |
+| Cards / containers | Light Grey | `#F2F2F2` |
+| Secondary text | Grey | `#7F8C8D` |
+| Dark mode background | Dark Grey | `#121212` |
+
+---
+
+## **4. Charts / Graphs**
+
+| Purpose | Color | Hex |
+| --- | --- | --- |
+| Positive values | Green | `#2ECC71` |
+| Negative values | Red | `#E74C3C` |
+| Neutral / info | Blue | `#3498DB` |
+| Highlight / selected | Orange | `#F39C12` |
+
+---
+
+### **5. Suggested Usage**
+
+- **Header / Navbar:** Dark Blue
+- **Primary Buttons:** Blue
+- **Income / Positive numbers:** Green
+- **Expenses / Negative numbers:** Red
+- **Alerts / Budget warnings:** Orange
+- **Background:** Off-White
+- **Cards:** Light Grey
+- **Secondary text:** Grey
