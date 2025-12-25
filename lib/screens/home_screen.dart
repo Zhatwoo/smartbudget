@@ -8,6 +8,7 @@ import '../widgets/humbergersidebar.dart';
 import '../widgets/notifications.dart';
 import 'inflationTracker.dart';
 import '../widgets/flower_petals_menu.dart';
+import '../widgets/skeleton_loader.dart';
 import '../utils/route_transitions.dart';
 import '../providers/providers.dart';
 import '../models/transaction_model.dart';
@@ -130,11 +131,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     super.initState();
     _balanceAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 600),
     );
     _balanceAnimation = CurvedAnimation(
       parent: _balanceAnimationController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeInOut,
     );
     _balanceAnimationController.forward();
     
@@ -145,14 +146,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     // Initialize pie chart animation controller
     _pieChartAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
     );
     _pieChartSlideAnimation = Tween<Offset>(
       begin: const Offset(0, -1), // Start from top (above view)
       end: Offset.zero, // End at normal position
     ).animate(CurvedAnimation(
       parent: _pieChartAnimationController,
-      curve: Curves.easeOut,
+      curve: Curves.easeInOut,
     ));
     
     // Initialize inflation alerts page controller
@@ -250,14 +251,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     final totalIncome = ref.watch(totalIncomeProvider);
     final totalExpenses = ref.watch(totalExpensesProvider);
     final recentTransactionsList = ref.watch(recentTransactionsProvider);
-    final unreadNotificationsCount = ref.watch(unreadNotificationsCountProvider);
+    // Use select() for simple values to reduce rebuilds
+    final unreadNotificationsCount = ref.watch(unreadNotificationsCountProvider.select((count) => count));
     
-    // Handle loading state
+    // Handle loading state with skeleton loader
     if (transactionsAsync.isLoading) {
       return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: SafeArea(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: 5,
+            itemExtent: 90.0,
+            itemBuilder: (context, index) => const TransactionSkeletonItem(),
           ),
         ),
       );
@@ -898,8 +904,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               ),
                             ],
                           ),
-                          child: CustomPaint(
-                            painter: PieChartPainter(categorySpending, total > 0 ? total : 1),
+                          child: RepaintBoundary(
+                            child: CustomPaint(
+                              painter: PieChartPainter(categorySpending, total > 0 ? total : 1),
+                            ),
                           ),
                         ),
                       ),
@@ -1216,9 +1224,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 }
                 return SizedBox(
                   height: 80,
-                  child: CustomPaint(
-                    painter: MiniInflationChartPainter(rates),
-                    child: Container(),
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: MiniInflationChartPainter(rates),
+                      child: Container(),
+                    ),
                   ),
                 );
               },
@@ -1508,14 +1518,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           ],
         ),
         const SizedBox(height: 20),
-        ...recentTransactions.asMap().entries.map((entry) {
-          final index = entry.key;
-          final transaction = entry.value;
-          final isIncome = transaction.amount > 0;
-          final amountColor = isIncome ? const Color(0xFF27AE60) : const Color(0xFFE74C3C);
-          
-          return Container(
-            margin: EdgeInsets.only(bottom: index == recentTransactions.length - 1 ? 0 : 12),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: recentTransactions.length,
+          itemExtent: 90.0, // Fixed height for better performance (increased to prevent overflow)
+          cacheExtent: 200.0,
+          itemBuilder: (context, index) {
+            final transaction = recentTransactions[index];
+            final isIncome = transaction.amount > 0;
+            final amountColor = isIncome ? const Color(0xFF27AE60) : const Color(0xFFE74C3C);
+            
+            return Container(
+            margin: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () {
                 // TODO: Navigate to transaction details
@@ -1560,6 +1575,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             transaction.title,
@@ -1623,7 +1639,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               ),
             ),
           );
-        }).toList(),
+          },
+        ),
       ],
     );
   }

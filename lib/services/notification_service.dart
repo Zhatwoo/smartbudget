@@ -185,6 +185,7 @@ class NotificationService {
         .doc(userId)
         .collection('notifications')
         .orderBy('timestamp', descending: true)
+        .limit(100) // Limit to 100 most recent notifications for performance
         .snapshots()
         .map((snapshot) {
       return snapshot.docs

@@ -60,6 +60,7 @@ class TransactionService {
         .doc(userId) // Explicitly use authenticated user's ID
         .collection('transactions')
         .orderBy('createdAt', descending: true)
+        .limit(500) // Limit to 500 most recent transactions for performance
         .snapshots()
         .map((snapshot) {
       // Additional security: Filter by userId in the data as well

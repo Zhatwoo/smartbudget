@@ -10,8 +10,8 @@ class ImmersivePageRoute<T> extends PageRouteBuilder<T> {
     this.isReplacement = false,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: const Duration(milliseconds: 400),
-          reverseTransitionDuration: const Duration(milliseconds: 350),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             // Combined animations for immersive effect
             final fadeAnimation = Tween<double>(
@@ -20,7 +20,7 @@ class ImmersivePageRoute<T> extends PageRouteBuilder<T> {
             ).animate(
               CurvedAnimation(
                 parent: animation,
-                curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+                curve: Curves.easeInOut,
               ),
             );
 
@@ -30,7 +30,7 @@ class ImmersivePageRoute<T> extends PageRouteBuilder<T> {
             ).animate(
               CurvedAnimation(
                 parent: animation,
-                curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+                curve: Curves.easeInOut,
               ),
             );
 
@@ -40,7 +40,7 @@ class ImmersivePageRoute<T> extends PageRouteBuilder<T> {
             ).animate(
               CurvedAnimation(
                 parent: animation,
-                curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+                curve: Curves.easeInOut,
               ),
             );
 
@@ -76,8 +76,8 @@ class SlideRightPageRoute<T> extends PageRouteBuilder<T> {
   SlideRightPageRoute({required this.child})
       : super(
           pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: const Duration(milliseconds: 350),
-          reverseTransitionDuration: const Duration(milliseconds: 300),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final slideAnimation = Tween<Offset>(
               begin: const Offset(1.0, 0.0),
@@ -95,7 +95,7 @@ class SlideRightPageRoute<T> extends PageRouteBuilder<T> {
             ).animate(
               CurvedAnimation(
                 parent: animation,
-                curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+                curve: Curves.easeInOut,
               ),
             );
 
@@ -117,8 +117,8 @@ class SlideUpPageRoute<T> extends PageRouteBuilder<T> {
   SlideUpPageRoute({required this.child})
       : super(
           pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: const Duration(milliseconds: 400),
-          reverseTransitionDuration: const Duration(milliseconds: 350),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final slideAnimation = Tween<Offset>(
               begin: const Offset(0.0, 1.0),
@@ -136,7 +136,7 @@ class SlideUpPageRoute<T> extends PageRouteBuilder<T> {
             ).animate(
               CurvedAnimation(
                 parent: animation,
-                curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+                curve: Curves.easeInOut,
               ),
             );
 
@@ -158,8 +158,8 @@ class FadePageRoute<T> extends PageRouteBuilder<T> {
   FadePageRoute({required this.child})
       : super(
           pageBuilder: (context, animation, secondaryAnimation) => child,
-          transitionDuration: const Duration(milliseconds: 300),
-          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionDuration: const Duration(milliseconds: 200),
+          reverseTransitionDuration: const Duration(milliseconds: 150),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(
               opacity: animation,

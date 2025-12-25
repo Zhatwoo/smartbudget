@@ -245,6 +245,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: ListView.builder(
                           padding: const EdgeInsets.all(20.0),
                           itemCount: notifications.length,
+                          itemExtent: 100.0, // Fixed height for better performance
+                          cacheExtent: 300.0,
+                          addAutomaticKeepAlives: false,
                           itemBuilder: (context, index) {
                             final notification = notifications[index];
                             final color = _getNotificationColor(notification.type);
