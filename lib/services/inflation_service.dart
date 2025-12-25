@@ -89,9 +89,9 @@ class InflationService {
         .snapshots()
         .map((snapshot) {
       try {
-        return snapshot.docs
-            .map((doc) => InflationItemModel.fromMap(doc.id, doc.data()))
-            .toList();
+      return snapshot.docs
+          .map((doc) => InflationItemModel.fromMap(doc.id, doc.data()))
+          .toList();
       } catch (e) {
         // If there's an error parsing, return empty list
         return <InflationItemModel>[];

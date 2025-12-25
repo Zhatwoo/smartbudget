@@ -1078,7 +1078,6 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
       );    
   }
 }
-
 // Models
 class Suggestion {
   final String id;
@@ -1115,4 +1114,5 @@ class Alternative {
     required this.savings,
   });
 }
+
 

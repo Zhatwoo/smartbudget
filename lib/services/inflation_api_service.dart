@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -180,28 +179,20 @@ class InflationApiService {
     double inflationRate,
     int months,
   ) {
-    if (inflationRate == 0 || months == 0) return currentPrice;
+    if (inflationRate == 0) return currentPrice;
     
     final monthlyRate = inflationRate / 100 / 12; // Convert annual to monthly
-    // Use compound interest formula: P * (1 + r)^n
-    return currentPrice * math.pow(1 + monthlyRate, months);
+    return currentPrice * (1 + monthlyRate) * months;
   }
 
   /// Calculate multiple price predictions (for next 3 months)
-  /// Each prediction compounds from the previous month
   List<double> calculatePricePredictions(
     double currentPrice,
     double inflationRate,
     int count,
   ) {
-    if (inflationRate == 0 || count == 0) {
-      return List.filled(count, currentPrice);
-    }
-    
-    final monthlyRate = inflationRate / 100 / 12;
     return List.generate(count, (index) {
-      // Compound from base price for each month ahead
-      return currentPrice * math.pow(1 + monthlyRate, index + 1);
+      return calculatePricePrediction(currentPrice, inflationRate, index + 1);
     });
   }
 

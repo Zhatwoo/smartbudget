@@ -3,10 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Use web client ID from google-services.json (client_type: 3)
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -79,24 +76,6 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
-      // Handle PlatformException specifically
-      final errorMessage = e.toString();
-      if (errorMessage.contains('ApiException') || 
-          errorMessage.contains('sign_in_failed') ||
-          errorMessage.contains('DEVELOPER_ERROR') ||
-          errorMessage.contains('PlatformException')) {
-        throw Exception(
-          'Google Sign-In is not properly configured.\n\n'
-          'Please follow these steps:\n'
-          '1. Get your SHA-1 fingerprint (see GOOGLE_SIGNIN_FIX.md)\n'
-          '2. Add SHA-1 to Firebase Console > Project Settings > Android app\n'
-          '3. Enable Google Sign-In in Firebase Console > Authentication\n'
-          '4. Download FRESH google-services.json from Firebase Console\n'
-          '5. Replace android/app/google-services.json with the new file\n'
-          '6. Run: flutter clean && flutter pub get && flutter run\n\n'
-          'See GOOGLE_SIGNIN_FIX.md for detailed instructions.'
-        );
-      }
       throw Exception('Google sign in failed: ${e.toString()}');
     }
   }
