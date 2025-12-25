@@ -66,15 +66,27 @@ final inflationPricePredictionsProvider = Provider.family<List<double>, Inflatio
 
 /// Monthly Predictions Provider
 /// Predicts expenses for next 6 months
+/// Uses historical data, budgets, and inflation rate
 /// Used by Predictions screen
 final monthlyPredictionsProvider = Provider<List<MonthlyPrediction>>((ref) {
   final transactions = ref.watch(transactionsProvider);
+  final budgets = ref.watch(budgetsProvider);
+  final inflationRate = ref.watch(inflationRateProvider);
   final predictionService = ref.watch(predictionServiceProvider);
   
   if (transactions.value == null) return [];
   
-  // Predict next 6 months
-  return predictionService.predictNextMonthsExpenses(transactions.value!, 6);
+  // Get budgets and inflation rate
+  final budgetsList = budgets.value ?? [];
+  final rate = inflationRate.valueOrNull;
+  
+  // Predict next 6 months with budget and inflation considerations
+  return predictionService.predictNextMonthsExpenses(
+    transactions.value!,
+    6,
+    budgets: budgetsList,
+    inflationRate: rate,
+  );
 });
 
 /// Current Month Spending Provider

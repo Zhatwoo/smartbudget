@@ -1,5 +1,7 @@
 import '../models/transaction_model.dart';
 import '../models/inflation_item_model.dart';
+import '../models/budget_model.dart';
+import 'dart:math' as math;
 
 /// Service for handling prediction logic
 /// Handles business logic for expense predictions
@@ -131,22 +133,20 @@ class PredictionService {
   }
 
   /// Predict expenses for next N months
+  /// Uses historical monthly data, budget constraints, and inflation
   /// Returns list of predicted amounts for each month
   List<MonthlyPrediction> predictNextMonthsExpenses(
     List<TransactionModel> transactions,
-    int numberOfMonths,
-  ) {
+    int numberOfMonths, {
+    List<BudgetModel>? budgets,
+    double? inflationRate,
+  }) {
     final predictions = <MonthlyPrediction>[];
     final now = DateTime.now();
     
-    // Get current month spending
-    final currentMonthStart = DateTime(now.year, now.month, 1);
-    final currentMonthExpenses = transactions
-        .where((t) => 
-            t.type == 'expense' && 
-            t.date.isAfter(currentMonthStart.subtract(const Duration(days: 1))))
-        .fold(0.0, (sum, t) => sum + t.amount.abs());
-
+    // Get historical monthly spending (last 6 months)
+    final historicalMonthlySpending = _getHistoricalMonthlySpending(transactions, 6);
+    
     // Get categories
     final categories = transactions
         .where((t) => t.type == 'expense')
@@ -158,15 +158,63 @@ class PredictionService {
       final targetMonth = DateTime(now.year, now.month + monthOffset, 1);
       final monthName = _getMonthName(targetMonth.month);
       
-      // Calculate days in target month
-      final daysInMonth = DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
-      
-      // Predict spending for this month
+      // Predict spending for this month using multiple methods
       double monthPrediction = 0.0;
+      
+      // Method 1: Historical average (if we have enough data)
+      double historicalAverage = 0.0;
+      if (historicalMonthlySpending.isNotEmpty) {
+        historicalAverage = historicalMonthlySpending.values.reduce((a, b) => a + b) / historicalMonthlySpending.length;
+      }
+      
+      // Method 2: Category-based prediction with trend
+      double categoryBasedPrediction = 0.0;
       for (final category in categories) {
-        // Use 30-day average and scale to month
-        final dailyAverage = _getCategoryDailyAverage(transactions, category);
-        monthPrediction += dailyAverage * daysInMonth;
+        final categoryMonthlyAvg = _getCategoryMonthlyAverage(transactions, category);
+        final trend = _getCategoryTrend(transactions, category);
+        
+        // Apply trend (increasing/decreasing)
+        double categoryPrediction = categoryMonthlyAvg;
+        if (trend > 0.05) {
+          // Increasing trend - add 5% per month
+          categoryPrediction *= (1 + (trend * monthOffset));
+        } else if (trend < -0.05) {
+          // Decreasing trend
+          categoryPrediction *= (1 + (trend * monthOffset));
+        }
+        
+        // Apply inflation if provided
+        if (inflationRate != null && inflationRate > 0) {
+          categoryPrediction *= (1 + (inflationRate / 100) * monthOffset);
+        }
+        
+        // Consider budget limit if available
+        if (budgets != null) {
+          final budget = budgets.firstWhere(
+            (b) => b.category == category,
+            orElse: () => BudgetModel(
+              category: category,
+              limit: 0,
+              spent: 0,
+              startDate: now,
+              endDate: now,
+            ),
+          );
+          
+          // If budget exists and prediction exceeds it, cap at budget + 10% buffer
+          if (budget.limit > 0 && categoryPrediction > budget.limit) {
+            categoryPrediction = budget.limit * 1.1; // 10% buffer for safety
+          }
+        }
+        
+        categoryBasedPrediction += categoryPrediction;
+      }
+      
+      // Combine methods: 70% category-based, 30% historical average (if available)
+      if (historicalAverage > 0) {
+        monthPrediction = (categoryBasedPrediction * 0.7) + (historicalAverage * 0.3);
+      } else {
+        monthPrediction = categoryBasedPrediction;
       }
 
       predictions.add(MonthlyPrediction(
@@ -225,6 +273,128 @@ class PredictionService {
             t.type == 'expense' && 
             t.date.isAfter(currentMonthStart.subtract(const Duration(days: 1))))
         .fold(0.0, (sum, t) => sum + t.amount.abs());
+  }
+
+  /// Get historical monthly spending for the last N months
+  Map<String, double> _getHistoricalMonthlySpending(
+    List<TransactionModel> transactions,
+    int numberOfMonths,
+  ) {
+    final monthlySpending = <String, double>{};
+    final now = DateTime.now();
+    
+    for (int i = numberOfMonths - 1; i >= 0; i--) {
+      final monthDate = DateTime(now.year, now.month - i, 1);
+      final monthStart = DateTime(monthDate.year, monthDate.month, 1);
+      final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+      
+      final monthKey = '${monthDate.year}-${monthDate.month.toString().padLeft(2, '0')}';
+      
+      final monthExpenses = transactions
+          .where((t) => 
+              t.type == 'expense' &&
+              t.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+              t.date.isBefore(monthEnd.add(const Duration(days: 1))))
+          .fold(0.0, (sum, t) => sum + t.amount.abs());
+      
+      monthlySpending[monthKey] = monthExpenses;
+    }
+    
+    return monthlySpending;
+  }
+
+  /// Get average monthly spending for a category
+  double _getCategoryMonthlyAverage(
+    List<TransactionModel> transactions,
+    String category,
+  ) {
+    final categoryExpenses = transactions
+        .where((t) => t.category == category && t.type == 'expense')
+        .toList();
+
+    if (categoryExpenses.isEmpty) return 0.0;
+
+    final now = DateTime.now();
+    final sixMonthsAgo = DateTime(now.year, now.month - 6, 1);
+    
+    // Get monthly totals for last 6 months
+    final monthlyTotals = <double>[];
+    for (int i = 5; i >= 0; i--) {
+      final monthDate = DateTime(now.year, now.month - i, 1);
+      final monthStart = DateTime(monthDate.year, monthDate.month, 1);
+      final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+      
+      final monthTotal = categoryExpenses
+          .where((t) => 
+              t.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+              t.date.isBefore(monthEnd.add(const Duration(days: 1))))
+          .fold(0.0, (sum, t) => sum + t.amount.abs());
+      
+      if (monthTotal > 0) {
+        monthlyTotals.add(monthTotal);
+      }
+    }
+
+    if (monthlyTotals.isEmpty) {
+      // Fallback to 30-day average if no monthly data
+      return _getCategoryDailyAverage(transactions, category) * 30;
+    }
+
+    return monthlyTotals.reduce((a, b) => a + b) / monthlyTotals.length;
+  }
+
+  /// Get trend for a category (positive = increasing, negative = decreasing)
+  /// Returns rate of change per month (e.g., 0.05 = 5% increase per month)
+  double _getCategoryTrend(
+    List<TransactionModel> transactions,
+    String category,
+  ) {
+    final categoryExpenses = transactions
+        .where((t) => t.category == category && t.type == 'expense')
+        .toList();
+
+    if (categoryExpenses.length < 2) return 0.0;
+
+    final now = DateTime.now();
+    
+    // Get last 3 months of data
+    final monthlyTotals = <double>[];
+    for (int i = 2; i >= 0; i--) {
+      final monthDate = DateTime(now.year, now.month - i, 1);
+      final monthStart = DateTime(monthDate.year, monthDate.month, 1);
+      final monthEnd = DateTime(monthDate.year, monthDate.month + 1, 0, 23, 59, 59);
+      
+      final monthTotal = categoryExpenses
+          .where((t) => 
+              t.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+              t.date.isBefore(monthEnd.add(const Duration(days: 1))))
+          .fold(0.0, (sum, t) => sum + t.amount.abs());
+      
+      monthlyTotals.add(monthTotal);
+    }
+
+    if (monthlyTotals.length < 2) return 0.0;
+
+    // Calculate trend using linear regression
+    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    final n = monthlyTotals.length;
+
+    for (int i = 0; i < n; i++) {
+      final x = i.toDouble();
+      final y = monthlyTotals[i];
+      sumX += x;
+      sumY += y;
+      sumXY += x * y;
+      sumX2 += x * x;
+    }
+
+    if (n * sumX2 - sumX * sumX == 0) return 0.0;
+
+    final slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    final averageY = sumY / n;
+
+    // Return normalized trend (slope / average)
+    return averageY > 0 ? slope / averageY : 0.0;
   }
 }
 

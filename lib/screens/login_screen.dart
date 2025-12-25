@@ -86,6 +86,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         if (!mounted) return;
 
+        // Initialize notification service after successful login
+        try {
+          final notificationService = ref.read(notificationServiceProvider);
+          await notificationService.initialize();
+        } catch (e) {
+          // Silently fail - notification initialization errors shouldn't block navigation
+        }
+
         // Success - navigate to home
         Navigator.of(context).pushReplacementNamed('/home');
       } catch (e) {
@@ -142,6 +150,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         
         if (!mounted) return;
         
+        // Initialize notification service after successful login
+        try {
+          final notificationService = ref.read(notificationServiceProvider);
+          await notificationService.initialize();
+        } catch (e) {
+          // Silently fail - notification initialization errors shouldn't block navigation
+        }
+        
         // Success - navigate to home
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
@@ -195,154 +211,167 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _handleTestAccount() async {
-    // Fill in test credentials
-    _emailController.text = 'test@test.com';
-    _passwordController.text = 'test123';
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      // Try to sign in with test account
-      await authService.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      if (!mounted) return;
-
-      // Success - navigate to home
-      Navigator.of(context).pushReplacementNamed('/home');
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Test account not found. Please create an account first.';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage ?? 'An error occurred'),
-          backgroundColor: const Color(0xFFE74C3C),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
 
   void _handleForgotPassword() {
-    final emailController = TextEditingController();
+    final identifierController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    bool _isLoading = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        title: const Text(
-          'Forgot Password?',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Enter your email address and we\'ll send you a link to reset your password.',
-                style: TextStyle(fontSize: 15),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Enter your email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+          title: const Text(
+            'Forgot Password?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enter your username, mobile number, or email address and we\'ll send you a link to reset your password.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                  if (!emailRegex.hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w600,
-              ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: identifierController,
+                  keyboardType: TextInputType.text,
+                  enabled: !_isLoading,
+                  decoration: InputDecoration(
+                    labelText: 'Username, Mobile, or Email',
+                    hintText: 'Enter username, mobile number, or email',
+                    prefixIcon: const Icon(Icons.person_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your username, mobile number, or email';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                try {
-                  final authService = ref.read(authServiceProvider);
-                  await authService.resetPassword(emailController.text.trim());
-                  if (!mounted) return;
-                  
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password reset link sent to your email'),
-                      backgroundColor: Color(0xFF4A90E2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                      backgroundColor: const Color(0xFFE74C3C),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading ? null : () async {
+                if (formKey.currentState!.validate()) {
+                  setDialogState(() {
+                    _isLoading = true;
+                  });
+
+                  try {
+                    final authService = ref.read(authServiceProvider);
+                    final firebaseService = ref.read(firebaseServiceProvider);
+                    final identifier = identifierController.text.trim();
+
+                    // Determine if it's email, mobile, or username
+                    String? username;
+                    String? mobileNumber;
+                    String? email;
+
+                    // Check if it's an email
+                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (emailRegex.hasMatch(identifier)) {
+                      email = identifier;
+                    }
+                    // Check if it's a mobile number (starts with + or has digits)
+                    else if (RegExp(r'^\+?[0-9\s-]+$').hasMatch(identifier)) {
+                      mobileNumber = identifier;
+                    }
+                    // Otherwise, treat as username
+                    else {
+                      username = identifier;
+                    }
+
+                    await authService.resetPasswordByIdentifier(
+                      firebaseService: firebaseService,
+                      username: username,
+                      mobileNumber: mobileNumber,
+                      email: email,
+                    );
+
+                    if (!mounted) return;
+
+                    setDialogState(() {
+                      _isLoading = false;
+                    });
+
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password reset link sent to your email'),
+                        backgroundColor: Color(0xFF4A90E2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
+
+                    setDialogState(() {
+                      _isLoading = false;
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: const Color(0xFFE74C3C),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A90E2),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Send Link',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
             ),
-            child: const Text(
-              'Send Link',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -350,7 +379,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
@@ -386,10 +415,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Title
                 Text(
                   _isLoginMode ? 'Welcome Back' : 'Create Account',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                   textAlign: TextAlign.center,
@@ -403,7 +432,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : 'Sign up to get started',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
@@ -421,18 +450,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: const Icon(Icons.email_outlined, size: 22),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                   ),
                   validator: _validateEmail,
@@ -466,18 +495,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                   ),
                   validator: _validatePassword,
@@ -569,34 +598,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // Test Account Button
-                SizedBox(
-                  height: 56,
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _handleTestAccount,
-                    icon: const Icon(Icons.bug_report_outlined, size: 20),
-                    label: const Text(
-                      'Use Test Account',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF4A90E2),
-                      side: const BorderSide(
-                        color: Color(0xFF4A90E2),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
 
                 // Divider
@@ -604,7 +605,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Expanded(
                       child: Divider(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                       ),
                     ),
                     Padding(
@@ -612,14 +613,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Text(
                         'OR',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                     Expanded(
                       child: Divider(
-                        color: Colors.grey.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                       ),
                     ),
                   ],
@@ -627,69 +628,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
 
                 // Social Login Buttons
-                Column(
-                  children: [
-                    // Google Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading
-                            ? null
-                            : () => _handleSocialLogin('google'),
-                        icon: const Icon(Icons.g_mobiledata, size: 22),
-                        label: const Text(
-                          'Google',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          side: BorderSide(
-                            color: Colors.grey.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                          foregroundColor: Colors.black87,
-                        ),
+                // Google Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _handleSocialLogin('google'),
+                    icon: const Icon(Icons.g_mobiledata, size: 22),
+                    label: const Text(
+                      'Google',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Facebook Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading
-                            ? null
-                            : () => _handleSocialLogin('facebook'),
-                        icon: const Icon(Icons.facebook, size: 22),
-                        label: const Text(
-                          'Facebook',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          side: BorderSide(
-                            color: Colors.grey.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                          foregroundColor: Colors.black87,
-                        ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                     ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -724,43 +690,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Toggle Login/Sign Up
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isLoginMode
-                          ? 'Already have an account? '
-                          : 'Don\'t have an account? ',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        if (_isLoginMode) {
-                          // Navigate to register screen
-                          Navigator.of(context).pushNamed('/register');
-                        } else {
-                          setState(() {
-                            _isLoginMode = true;
-                            _formKey.currentState?.reset();
-                          });
-                        }
-                      },
-                      child: Text(
-                        _isLoginMode ? 'Sign In' : 'Sign Up',
-                        style: const TextStyle(
-                          color: Color(0xFF4A90E2),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

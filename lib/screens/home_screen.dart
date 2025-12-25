@@ -13,7 +13,7 @@ import '../providers/providers.dart';
 import '../models/transaction_model.dart';
 import '../models/bill_model.dart';
 import '../models/upcoming_bill_model.dart';
-import '../models/inflation_item_model.dart';
+import '../utils/currency_formatter.dart';
 
 // CustomClipper for curved header bottom edge
 class _CurvedHeaderClipper extends CustomClipper<Path> {
@@ -50,9 +50,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   late Animation<Offset> _pieChartSlideAnimation;
   double _scrollOffset = 0.0;
   bool _showPieChart = false;
-  int _currentInflationAlertIndex = 0;
-  double _cardDragOffset = 0.0;
-  bool _isDragging = false;
   
   // Double tap detection
   DateTime? _lastTap;
@@ -253,7 +250,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     final totalIncome = ref.watch(totalIncomeProvider);
     final totalExpenses = ref.watch(totalExpensesProvider);
     final recentTransactionsList = ref.watch(recentTransactionsProvider);
-    final inflationItemsAsync = ref.watch(inflationItemsProvider);
     final unreadNotificationsCount = ref.watch(unreadNotificationsCountProvider);
     
     // Handle loading state
@@ -337,7 +333,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         final translateY = -(_scrollOffset.clamp(0.0, maxTranslateY));
         
         return Scaffold(
-      backgroundColor: const Color(0xFFE5E5E5), // Light gray background
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         bottom: false,
         child: Stack(
@@ -464,7 +460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               FadeTransition(
                                 opacity: _balanceAnimation,
                                 child: Text(
-                                  '₱${totalBalance.toStringAsFixed(2)}',
+                                  CurrencyFormatter.format(totalBalance, ref.read(currencyProvider), decimals: 2),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 36,
@@ -530,7 +526,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           ),
                                           const SizedBox(height: 6), // Reduced from 8
                                           Text(
-                                            '₱${totalIncome.toStringAsFixed(0)}',
+                                            CurrencyFormatter.format(totalIncome, ref.read(currencyProvider)),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 16, // Reduced from 18
@@ -586,7 +582,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           ),
                                           const SizedBox(height: 6), // Reduced from 8
                                           Text(
-                                            '₱${totalExpenses.toStringAsFixed(0)}',
+                                            CurrencyFormatter.format(totalExpenses, ref.read(currencyProvider)),
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 16, // Reduced from 18
@@ -624,7 +620,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   topRight: Radius.circular(30),
                 ),
                 child: Container(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: RefreshIndicator(
                     onRefresh: () async {
                       await Future.delayed(const Duration(seconds: 1));
@@ -647,8 +643,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           _buildCategorySpendingSection(categorySpending),
                           const SizedBox(height: 20),
 
-                          // Inflation Alerts (from Inflation Tracker)
-                          _buildInflationAlertsSection(inflationItemsAsync),
+                          // Inflation Rate (from API)
+                          _buildInflationRateSection(),
                           const SizedBox(height: 20),
 
                           // Upcoming Bills (from user input + auto-detected)
@@ -687,7 +683,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   elevation: 6,
-                  tooltip: 'Tap to add transaction, double tap or hold for menu',
+                  tooltip: 'Tap to add transaction, double tap for menu',
                   shape: const CircleBorder(),
                 ),
               );
@@ -704,18 +700,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
         ),
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.pie_chart_outline, size: 48, color: Colors.grey.shade300),
+              Icon(Icons.pie_chart_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(height: 12),
               Text(
                 'No spending data yet',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
               ),
             ],
           ),
@@ -751,7 +747,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '₱${total.toStringAsFixed(0)}',
+                CurrencyFormatter.format(total, ref.read(currencyProvider)),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -785,15 +781,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         child: Container(
                           padding: const EdgeInsets.all(8), // Reduced from 10
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.grey.withOpacity(0.1),
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
+                                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -844,11 +840,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               const SizedBox(height: 1), // Reduced from 2
                               // Amount
                               Text(
-                                '₱${(category.amount / 1000).toStringAsFixed(0)}k',
+                                '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))}${(category.amount / 1000).toStringAsFixed(0)}k',
                                 style: TextStyle(
                                   fontSize: 9, // Reduced from 10
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -872,15 +868,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -969,7 +965,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                           ),
                                         ),
                                         Text(
-                                          '₱${category.amount.toStringAsFixed(0)}',
+                                          CurrencyFormatter.format(category.amount, ref.read(currencyProvider)),
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -1008,7 +1004,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1023,57 +1019,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildInflationAlertsSection(AsyncValue<List<InflationItemModel>> inflationItemsAsync) {
-    return inflationItemsAsync.when(
-      data: (items) {
-        // Convert inflation items to alerts
-        final inflationAlerts = items.map((item) {
-          return InflationAlert(
-            item: item.name,
-            change: item.percentageChange,
-            isIncrease: item.isIncrease,
-          );
-        }).toList();
-        
-        return _buildInflationAlertsContent(inflationAlerts);
-      },
-      loading: () => Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (error, stack) => Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        ),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade300),
-              const SizedBox(height: 12),
-              Text(
-                'Error loading inflation data',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInflationAlertsContent(List<InflationAlert> inflationAlerts) {
+  Widget _buildInflationRateSection() {
+    final inflationRateAsync = ref.watch(inflationRateProvider);
+    final historicalRatesAsync = ref.watch(historicalInflationProvider);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
@@ -1084,7 +1038,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             ),
             const SizedBox(width: 8),
             Text(
-              'Inflation Alerts',
+                  'Inflation Rate',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -1094,472 +1048,219 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        // 3D Card Stacking with Swipe Navigation (React-inspired)
-        if (inflationAlerts.isEmpty)
-          Container(
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/inflation-tracker');
+              },
+              child: Text(
+                'View Details',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        inflationRateAsync.when(
+          data: (rate) {
+            if (rate == null) {
+              return _buildInflationRateEmptyCard();
+            }
+            return _buildInflationRateCard(rate, historicalRatesAsync);
+          },
+          loading: () => Container(
             padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (error, stack) => Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
             ),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.trending_up_outlined, size: 48, color: Colors.grey.shade300),
+                  Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(height: 12),
                   Text(
-                    'No inflation alerts',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    'Error loading inflation data',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
                   ),
                 ],
               ),
             ),
-          )
-        else
-          SizedBox(
-            height: 161,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-              // Render cards in reverse order (back cards first, active card last so it's on top)
-              // Support looping - show next cards even when at end/start
-              ...(inflationAlerts.isEmpty 
-                ? []
-                : List.generate(
-                  math.min(3, inflationAlerts.length), // Show current + next 2 cards (or less if not enough)
-                  (i) {
-                    // Calculate actual index with looping
-                    int actualIndex = ((_currentInflationAlertIndex + i) % inflationAlerts.length).toInt();
-                    int stackPosition = i;
-                    
-                    final alert = inflationAlerts[actualIndex];
-                    final isActive = stackPosition == 0;
-                    
-                    // Calculate 3D transform values (similar to React component)
-                    // translateZ: -8px per stack position (reduced for smaller cards)
-                    // translateY: 5px per stack position (reduced for smaller cards)
-                    // translateX: drag offset for active card only
-                    // rotateY: rotation based on drag (0.2 degrees per pixel, converted to radians)
-                    double translateZ = -8.0 * stackPosition;
-                    double translateY = 5.0 * stackPosition;
-                    double translateX = isActive ? _cardDragOffset : 0.0;
-                    double rotateY = isActive ? (_cardDragOffset * 0.2) * (math.pi / 180) : 0.0; // 0.2 degrees per pixel
-                    double opacity = isActive 
-                        ? (1.0 - (math.min(_cardDragOffset.abs() / 100, 1.0) * 0.75)).clamp(0.25, 1.0)
-                        : 1.0; // Full opacity for stacked cards
-                    
-                    Widget cardWidget = Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: AnimatedContainer(
-                        duration: _isDragging 
-                            ? const Duration(milliseconds: 0) 
-                            : const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001) // Perspective (700px equivalent)
-                            ..translate(translateX, translateY, translateZ)
-                            ..rotateY(rotateY),
-                          child: Opacity(
-                            opacity: opacity,
-                            child: _buildInflationCard(alert, isActive, _isDragging),
-                          ),
-                        ),
-                      ),
-                    );
-                    
-                    // Cards behind are not interactive - use IgnorePointer to prevent any interaction
-                    if (!isActive) {
-                      return IgnorePointer(
-                        ignoring: true,
-                        child: cardWidget,
-                      );
-                    }
-                    
-                    // Return non-wrapped card for now - we'll wrap active card separately
-                    return cardWidget;
-                  },
-                ).reversed.toList()), // Reverse to render active card last (on top)
-              // Active card with gesture detector - rendered last so it's on top
-              if (inflationAlerts.isNotEmpty)
-                Builder(
-                  builder: (context) {
-                    final alert = inflationAlerts[_currentInflationAlertIndex];
-                    final stackPosition = 0;
-                    
-                    double translateZ = -8.0 * stackPosition;
-                    double translateY = 5.0 * stackPosition;
-                    double translateX = _cardDragOffset;
-                    double rotateY = (_cardDragOffset * 0.2) * (math.pi / 180);
-                    double opacity = (1.0 - (math.min(_cardDragOffset.abs() / 100, 1.0) * 0.75)).clamp(0.25, 1.0);
-                    
-                    Widget activeCardWidget = Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: AnimatedContainer(
-                        duration: _isDragging 
-                            ? const Duration(milliseconds: 0) 
-                            : const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001)
-                            ..translate(translateX, translateY, translateZ)
-                            ..rotateY(rotateY),
-                          child: Opacity(
-                            opacity: opacity,
-                            child: _buildInflationCard(alert, true, _isDragging),
-                          ),
-                        ),
-                      ),
-                    );
-                    
-                    return GestureDetector(
-                      onHorizontalDragStart: (details) {
-                        setState(() {
-                          _isDragging = true;
-                          _cardDragOffset = 0.0;
-                        });
-                      },
-                      onHorizontalDragUpdate: (details) {
-                        setState(() {
-                          _cardDragOffset += details.primaryDelta!;
-                        });
-                      },
-                      onHorizontalDragEnd: (details) {
-                        setState(() {
-                          _isDragging = false;
-                        });
-                        
-                        final threshold = 50.0;
-                        final velocity = details.primaryVelocity ?? 0.0;
-                        
-                        if (_cardDragOffset.abs() > threshold || velocity.abs() > 500) {
-                          if (_cardDragOffset > 0 || velocity > 0) {
-                            // Swipe right - go to previous (loop to last if at first)
-                            setState(() {
-                              if (inflationAlerts.isNotEmpty) {
-                                _currentInflationAlertIndex = ((_currentInflationAlertIndex - 1 + inflationAlerts.length) % inflationAlerts.length).toInt();
-                              }
-                              _cardDragOffset = 0.0;
-                            });
-                          } else {
-                            // Swipe left - go to next (loop to first if at last)
-                            setState(() {
-                              if (inflationAlerts.isNotEmpty) {
-                                _currentInflationAlertIndex = ((_currentInflationAlertIndex + 1) % inflationAlerts.length).toInt();
-                              }
-                              _cardDragOffset = 0.0;
-                            });
-                          }
-                        } else {
-                          setState(() {
-                            _cardDragOffset = 0.0;
-                          });
-                        }
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: activeCardWidget,
-                    );
-                  },
-                ),
-            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildInflationTrackerSummary(AsyncValue<List<InflationItemModel>> inflationItemsAsync) {
-    return inflationItemsAsync.when(
-      data: (items) {
-        if (items.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
+  Widget _buildInflationRateCard(double rate, AsyncValue<List<double>> historicalRatesAsync) {
+    final isHigh = rate > 5.0;
+    final isModerate = rate > 2.0 && rate <= 5.0;
+    
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).pushNamed('/inflation-tracker');
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.track_changes_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Inflation Tracker',
+                      'Current Rate',
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: -0.5,
-                      ),
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+              ),
+            ),
+                    const SizedBox(height: 8),
+                    Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                          rate.toStringAsFixed(2),
+                    style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: isHigh 
+                                ? const Color(0xFFE74C3C)
+                                : isModerate
+                                    ? const Color(0xFFF39C12)
+                                    : const Color(0xFF27AE60),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, left: 2),
+                          child: Text(
+                            '%',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/inflation-tracker');
-                  },
-                  child: Text(
-                    'View All',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: items.length > 5 ? 5 : items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final percentageChange = item.percentageChange;
-                  final isIncrease = item.isIncrease;
-                  
-                  return Container(
-                    width: 140,
-                    margin: EdgeInsets.only(
-                      right: index == (items.length > 5 ? 4 : items.length - 1) ? 0 : 12,
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/inflation-tracker');
-                      },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.grey.withOpacity(0.15),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: _getColorFromString(item.color).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    _getIconFromString(item.icon),
-                                    color: _getColorFromString(item.color),
-                                    size: 18,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: isIncrease
-                                        ? const Color(0xFFE74C3C).withOpacity(0.1)
-                                        : const Color(0xFF27AE60).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '${isIncrease ? '+' : ''}${percentageChange.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isIncrease
-                                          ? const Color(0xFFE74C3C)
-                                          : const Color(0xFF27AE60),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '₱${item.currentPrice.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                Text(
-                                  item.unit,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stack) => const SizedBox.shrink(),
-    );
-  }
-
-  // Helper functions for inflation tracker summary
-  Color _getColorFromString(String colorString) {
-    try {
-      return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
-    } catch (e) {
-      return const Color(0xFF4A90E2);
-    }
-  }
-
-  IconData _getIconFromString(String iconString) {
-    final iconMap = {
-      'rice_bowl': Icons.rice_bowl,
-      'local_drink': Icons.local_drink,
-      'egg': Icons.egg,
-      'local_gas_station': Icons.local_gas_station,
-      'breakfast_dining': Icons.breakfast_dining,
-      'shopping_cart': Icons.shopping_cart_rounded,
-    };
-    return iconMap[iconString] ?? Icons.shopping_cart_rounded;
-  }
-
-  Widget _buildInflationCard(InflationAlert alert, bool isActive, bool isDragging) {
-    // Green for decrease, Red for increase
-    final borderColor = alert.isIncrease 
-        ? const Color(0xFFE74C3C) // Red for increase
-        : const Color(0xFF27AE60); // Green for decrease
-    final alertColor = borderColor;
-    
-    return InkWell(
-      onTap: isActive && !_isDragging ? () {
-        Navigator.of(context).pushNamed('/inflation-tracker');
-      } : null, // Disable tap when dragging
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: borderColor.withOpacity(0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 7,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Minimalist Icon Container
-            Container(
-              width: 41,
-              height: 41,
-              decoration: BoxDecoration(
-                color: alertColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(
-                alert.isIncrease ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                color: alertColor,
-                size: 21,
-              ),
-            ),
-            const SizedBox(width: 14),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    alert.item,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: alertColor,
-                      borderRadius: BorderRadius.circular(7),
+                    color: isHigh
+                        ? const Color(0xFFE74C3C).withOpacity(0.1)
+                        : isModerate
+                            ? const Color(0xFFF39C12).withOpacity(0.1)
+                            : const Color(0xFF27AE60).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${alert.isIncrease ? '+' : ''}${alert.change.toStringAsFixed(1)}% this month',
-                      style: const TextStyle(
-                        fontSize: 13,
+                    isHigh
+                        ? 'High'
+                        : isModerate
+                            ? 'Moderate'
+                            : 'Low',
+                    style: TextStyle(
+                      fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.1,
+                      color: isHigh
+                          ? const Color(0xFFE74C3C)
+                          : isModerate
+                              ? const Color(0xFFF39C12)
+                              : const Color(0xFF27AE60),
                       ),
                     ),
                   ),
                 ],
               ),
+            const SizedBox(height: 16),
+            historicalRatesAsync.when(
+              data: (rates) {
+                if (rates.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return SizedBox(
+                  height: 80,
+                  child: CustomPaint(
+                    painter: MiniInflationChartPainter(rates),
+                    child: Container(),
+                  ),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (error, stack) => const SizedBox.shrink(),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildInflationRateEmptyCard() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.key_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              'API Key Not Configured',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/inflation-tracker');
+              },
+              child: const Text('View Details'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildUpcomingBillsSection(List<dynamic> upcomingBills) {
     return Column(
@@ -1589,18 +1290,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           Container(
             padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
             ),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade300),
+                  Icon(Icons.receipt_long_outlined, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(height: 12),
                   Text(
                     'No upcoming bills',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
                   ),
                 ],
               ),
@@ -1668,7 +1369,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: borderColor,
@@ -1676,7 +1377,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                           blurRadius: 7,
                           offset: const Offset(0, 2),
                           spreadRadius: 0,
@@ -1738,12 +1439,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                               'Amount',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             Text(
-                              '₱${billAmount.toStringAsFixed(0)}',
+                              CurrencyFormatter.format(billAmount, ref.read(currencyProvider)),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -1823,15 +1524,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                       spreadRadius: 0,
@@ -1876,7 +1577,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                 transaction.category,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1885,7 +1586,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                 '•',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade400,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1893,7 +1594,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                 _formatDate(transaction.date),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1907,7 +1608,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${isIncome ? '+' : '-'}₱${transaction.amount.abs().toStringAsFixed(0)}',
+                          CurrencyFormatter.formatWithSign(transaction.amount, ref.read(currencyProvider), showSign: true),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -1958,18 +1659,6 @@ class CategorySpending {
     required this.amount,
     required this.color,
     this.emoji,
-  });
-}
-
-class InflationAlert {
-  final String item;
-  final double change;
-  final bool isIncrease;
-
-  InflationAlert({
-    required this.item,
-    required this.change,
-    required this.isIncrease,
   });
 }
 
@@ -2032,6 +1721,49 @@ class PieChartPainter extends CustomPainter {
 
       startAngle += sweepAngle;
     }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Mini Inflation Chart Painter for Dashboard
+class MiniInflationChartPainter extends CustomPainter {
+  final List<double> rates;
+  final Color lineColor = const Color(0xFF4A90E2);
+  final Color gridColor = Colors.grey;
+
+  MiniInflationChartPainter(this.rates);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (rates.isEmpty) return;
+
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final minValue = rates.reduce(math.min);
+    final maxValue = rates.reduce(math.max);
+    final range = maxValue - minValue;
+    final padding = 5.0;
+
+    final path = Path();
+    for (int i = 0; i < rates.length; i++) {
+      final x = padding + (size.width - 2 * padding) * (i / (rates.length - 1));
+      final normalizedValue = range > 0 ? (rates[i] - minValue) / range : 0.5;
+      final y = size.height - padding - (size.height - 2 * padding) * normalizedValue;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, paint);
   }
 
   @override

@@ -30,6 +30,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
   late List<Animation<double>> _opacityAnimations;
   late List<Animation<Offset>> _slideAnimations;
   late List<Animation<double>> _pressScaleAnimations;
+  int? _showingTooltipIndex; // Track which tooltip is currently showing
 
   final List<MenuButton> _menuItems = [
     MenuButton(
@@ -161,6 +162,12 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
   }
 
   void _dismiss() {
+    // Hide tooltip if showing
+    if (_showingTooltipIndex != null) {
+      setState(() {
+        _showingTooltipIndex = null;
+      });
+    }
     // Reverse animations
     for (int i = _controllers.length - 1; i >= 0; i--) {
       Future.delayed(
@@ -214,7 +221,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
         child: SizedBox.expand(
           child: Stack(
             children: [
-            // Menu items positioned in half circle (upper side)
+            // Layer 1: All Icon Buttons (rendered first, lower z-index)
             ..._menuItems.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
@@ -231,48 +238,149 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
                   final slide = _slideAnimations[index].value;
                   final pressScale = _pressScaleAnimations[index].value;
 
+                  // Calculate icon center position
+                  final iconCenterX = widget.centerPosition.dx + slide.dx;
+                  final iconCenterY = widget.centerPosition.dy + slide.dy;
+                  final isShowingTooltip = _showingTooltipIndex == index;
+                  
                   return Positioned(
-                    left: widget.centerPosition.dx + slide.dx - 28,
-                    top: widget.centerPosition.dy + slide.dy - 28,
+                    left: iconCenterX - 28,
+                    top: iconCenterY - 28,
                     child: Opacity(
                       opacity: opacity,
-                        child: Transform.scale(
+                      child: Transform.scale(
                         scale: scale * pressScale,
                         child: GestureDetector(
-                          behavior: HitTestBehavior.deferToChild, // Don't block parent taps
+                          behavior: HitTestBehavior.deferToChild,
                           onTapDown: (_) {
                             _pressControllers[index].forward();
                           },
                           onTapUp: (_) {
                             _pressControllers[index].reverse();
-                            _handleItemTap(item);
+                            if (!isShowingTooltip) {
+                              _handleItemTap(item);
+                            }
+                            // Hide tooltip on tap up
+                            if (isShowingTooltip) {
+                              setState(() {
+                                _showingTooltipIndex = null;
+                              });
+                            }
                           },
                           onTapCancel: () {
                             _pressControllers[index].reverse();
+                            if (isShowingTooltip) {
+                              setState(() {
+                                _showingTooltipIndex = null;
+                              });
+                            }
                           },
-                          child: Tooltip(
-                            message: item.title,
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: item.color,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: item.color.withOpacity(0.4),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                item.icon,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                          onLongPress: () {
+                            // Show tooltip on long press
+                            setState(() {
+                              _showingTooltipIndex = index;
+                            });
+                          },
+                          onLongPressEnd: (_) {
+                            // Keep tooltip visible until tap
+                            // Tooltip will be dismissed on tap up
+                          },
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: item.color,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: item.color.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
+                            child: Icon(
+                              item.icon,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+            // Layer 2: All Tooltips (rendered last, highest z-index - always on top)
+            ..._menuItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final angle = (180 - (index * 180 / (_menuItems.length - 1))) * (math.pi / 180);
+              final isShowingTooltip = _showingTooltipIndex == index;
+              
+              if (!isShowingTooltip) return const SizedBox.shrink();
+              
+              return AnimatedBuilder(
+                animation: _controllers[index],
+                builder: (context, child) {
+                  final slide = _slideAnimations[index].value;
+                  final opacity = _opacityAnimations[index].value;
+                  
+                  // Calculate icon center position for tooltip placement
+                  final iconCenterX = widget.centerPosition.dx + slide.dx;
+                  final iconCenterY = widget.centerPosition.dy + slide.dy;
+                  
+                  return Positioned(
+                    left: iconCenterX - 60,
+                    top: iconCenterY - 70,
+                    width: 120,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: Material(
+                        elevation: 8,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: item.color.withOpacity(0.4),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: item.color.withOpacity(0.3),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                                spreadRadius: 0,
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            item.title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: item.color,
+                              letterSpacing: 0.3,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),

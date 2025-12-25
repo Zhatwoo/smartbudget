@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class TransactionModel {
   final String? id;
   final String title;
@@ -26,23 +28,34 @@ class TransactionModel {
       'title': title,
       'category': category,
       'amount': amount,
-      'date': date.toIso8601String(),
+      'date': Timestamp.fromDate(date), // Use Timestamp for proper querying
       'type': type,
       'notes': notes,
       'receiptUrl': receiptUrl,
-      'createdAt': now.toIso8601String(),
-      'updatedAt': now.toIso8601String(),
+      'createdAt': Timestamp.fromDate(now), // Use Timestamp for proper ordering
+      'updatedAt': Timestamp.fromDate(now),
     };
   }
 
   // Create from Firestore document
   factory TransactionModel.fromMap(String id, Map<String, dynamic> map) {
+    // Handle both Timestamp and ISO string formats for backward compatibility
+    DateTime parseDate(dynamic dateValue) {
+      if (dateValue is Timestamp) {
+        return dateValue.toDate();
+      } else if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else {
+        return DateTime.now();
+      }
+    }
+
     return TransactionModel(
       id: id,
       title: map['title'] ?? '',
       category: map['category'] ?? '',
       amount: (map['amount'] ?? 0).toDouble(),
-      date: DateTime.parse(map['date']),
+      date: parseDate(map['date']),
       type: map['type'] ?? 'expense',
       notes: map['notes'],
       receiptUrl: map['receiptUrl'],
@@ -55,11 +68,11 @@ class TransactionModel {
       'title': title,
       'category': category,
       'amount': amount,
-      'date': date.toIso8601String(),
+      'date': Timestamp.fromDate(date), // Use Timestamp for proper querying
       'type': type,
       'notes': notes,
       'receiptUrl': receiptUrl,
-      'updatedAt': DateTime.now().toIso8601String(),
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
     };
   }
 

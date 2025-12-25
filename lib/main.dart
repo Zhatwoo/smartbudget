@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -15,10 +16,28 @@ import 'screens/settings.dart';
 import 'screens/predictions_screen.dart';
 import 'widgets/notifications.dart';
 import 'utils/route_transitions.dart';
+import 'providers/providers.dart';
+
+/// Top-level background message handler
+/// This must be a top-level function and registered before runApp()
+/// Handles notifications when app is in background or terminated
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  
+  // Handle background message
+  // When app is opened, the notification will be processed
+  // The notification data will be available when user opens the app
+  // In-app notifications are created in Firestore by the notification service
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  
+  // Register background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -26,11 +45,13 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final darkMode = ref.watch(darkModeProvider);
+    
     return MaterialApp(
       title: 'Smart Budget',
       theme: ThemeData(
@@ -113,7 +134,7 @@ class MyApp extends StatelessWidget {
           surfaceTintColor: Colors.transparent, // Remove Material 3 tint
         ),
       ),
-      themeMode: ThemeMode.system,
+      themeMode: darkMode ? ThemeMode.dark : ThemeMode.light,
       home: const SplashScreen(),
       onGenerateRoute: (settings) {
         // Handle replacement routes (like login, onboarding, splash)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import '../providers/providers.dart';
+import '../utils/currency_formatter.dart';
 
 class AnalyticsReportScreen extends ConsumerStatefulWidget {
   const AnalyticsReportScreen({super.key});
@@ -62,7 +63,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
             child: Text(
               'OK',
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -82,7 +83,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
     final totalSpending = categorySpending.fold(0.0, (sum, cat) => sum + cat.amount);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -128,14 +129,14 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                           Icon(
                             Icons.analytics_outlined,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No analytics data available',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -144,7 +145,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                             'Add transactions to see analytics',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -160,15 +161,15 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                           Container(
                             padding: const EdgeInsets.all(16.0),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: Colors.grey.withOpacity(0.15),
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.03),
+                                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -200,7 +201,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                                           'Date Range',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey.shade600,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -209,10 +210,10 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                                           _selectedDateRange == null
                                               ? 'Last 6 months'
                                               : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors.black87,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                       ],
@@ -270,12 +271,12 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Monthly Spending Trends',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -283,15 +284,15 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.grey.withOpacity(0.15),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -320,17 +321,17 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                         month.month,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '₱${(month.amount / 1000).toStringAsFixed(0)}k',
-                        style: const TextStyle(
+                        '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))}${(month.amount / 1000).toStringAsFixed(0)}k',
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -351,12 +352,12 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Category-wise Breakdown',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -364,15 +365,15 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.grey.withOpacity(0.15),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -416,17 +417,17 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                               children: [
                                 Text(
                                   category.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontSize: 15,
                                   ),
                                 ),
                                 Text(
-                                  '₱${category.amount.toStringAsFixed(0)} (${percentage.toStringAsFixed(1)}%)',
+                                  '${CurrencyFormatter.format(category.amount, ref.read(currencyProvider))} (${percentage.toStringAsFixed(1)}%)',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey.shade600,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -455,12 +456,12 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Predicted Expenses (Next Month)',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -504,7 +505,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${currentMonthSpending.toStringAsFixed(0)}',
+                        CurrencyFormatter.format(currentMonthSpending, ref.read(currencyProvider)),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -527,7 +528,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${predictedNextMonth.toStringAsFixed(0)}',
+                        CurrencyFormatter.format(predictedNextMonth, ref.read(currencyProvider)),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -557,7 +558,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Expected ${increase >= 0 ? 'increase' : 'decrease'}: ₱${increase.abs().toStringAsFixed(0)} (${increasePercentage.abs().toStringAsFixed(1)}%)',
+                      'Expected ${increase >= 0 ? 'increase' : 'decrease'}: ${CurrencyFormatter.format(increase.abs(), ref.read(currencyProvider))} (${increasePercentage.abs().toStringAsFixed(1)}%)',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -581,12 +582,12 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Inflation Impact on Budget',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -594,7 +595,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: const Color(0xFFE74C3C).withOpacity(0.3),
@@ -602,7 +603,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -627,12 +628,12 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Current Inflation Rate',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -649,7 +650,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                         'Inflation Rate',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -678,7 +679,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₱${inflationAmount.toStringAsFixed(0)}',
+                        CurrencyFormatter.format(inflationAmount, ref.read(currencyProvider)),
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -708,7 +709,7 @@ class _AnalyticsReportScreenState extends ConsumerState<AnalyticsReportScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Due to ${inflationRate.toStringAsFixed(1)}% inflation, you need an additional ₱${inflationAmount.toStringAsFixed(0)} to maintain your current lifestyle.',
+                          'Due to ${inflationRate.toStringAsFixed(1)}% inflation, you need an additional ${CurrencyFormatter.format(inflationAmount, ref.read(currencyProvider))} to maintain your current lifestyle.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey.shade600,

@@ -189,30 +189,27 @@ class InflationService {
   /// Refresh all prices using inflation API
   /// Fetches current inflation rate and applies it to all tracked items
   /// Updates price history and calculates predicted prices
-  /// Throws exception if API key is missing or API call fails
+  /// Uses free Statbureau.org API (no API key required)
+  /// Falls back to default rates if API fails
   Future<void> refreshAllPrices() async {
     try {
       final apiService = await _getApiService();
       
-      // Check if API key is configured
-      if (ApiConfig.apiNinjasKey.isEmpty) {
-        throw Exception('API key not configured. Please set API_NINJAS_KEY environment variable or configure in api_config.dart');
-      }
-      
+      // Get inflation rate from free API (no key required)
+      // API service handles fallback to default rates automatically
       final inflationRate = await apiService.getInflationRate(ApiConfig.defaultCountry);
       
-      if (inflationRate == null) {
-        // API call failed or returned no data
-        throw Exception('Unable to fetch inflation data. Please check your API key and internet connection.');
-      }
+      // If API returns null, use default rate (API service already handles this)
+      final rate = inflationRate ?? 3.2; // Default Philippines inflation rate
 
       final items = await getInflationItems().first;
       
       for (final item in items) {
+        // Use the rate (either from API or default)
         if (item.id == null || item.currentPrice <= 0) continue;
 
         // Calculate new price based on inflation rate
-        final monthlyRate = inflationRate / 100 / 12; // Convert annual to monthly
+        final monthlyRate = rate / 100 / 12; // Convert annual to monthly
         final newPrice = item.currentPrice * (1 + monthlyRate);
         
         // Update price history
@@ -227,7 +224,7 @@ class InflationService {
         // Calculate predicted prices for next 3 months
         final predictedPrices = apiService.calculatePricePredictions(
           newPrice,
-          inflationRate,
+          rate,
           3,
         );
         
@@ -431,6 +428,55 @@ class InflationService {
       }
     } catch (e) {
       // Silently fail
+    }
+  }
+
+  /// Get current inflation rate from API
+  /// Returns the latest inflation rate for the default country
+  /// Returns current inflation rate from free API (no key required)
+  /// Falls back to default rate if API fails
+  Future<double?> getCurrentInflationRate() async {
+    try {
+      final apiService = await _getApiService();
+      return await apiService.getInflationRate(ApiConfig.defaultCountry);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get historical inflation rates
+  /// Returns list of inflation rates for the specified number of months
+  /// Uses free API (no key required), falls back to generated data if API fails
+  Future<List<double>> getHistoricalInflationRates(int months) async {
+    try {
+      final apiService = await _getApiService();
+      return await apiService.getHistoricalInflation(ApiConfig.defaultCountry, months);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Refresh inflation data from API
+  /// Fetches latest inflation rate and clears cache
+  /// Uses free Statbureau.org API (no API key required)
+  /// Falls back to default rates if API fails
+  Future<void> refreshInflationData() async {
+    try {
+      final apiService = await _getApiService();
+      
+      // Fetch latest rate from free API (no key required)
+      // API service handles fallback to default rates automatically
+      final inflationRate = await apiService.getInflationRate(ApiConfig.defaultCountry);
+      
+      // Rate is cached automatically by API service
+      // If null, default rate will be used on next call
+      if (inflationRate == null) {
+        // Silently fail - default rate will be used
+        return;
+      }
+    } catch (e) {
+      // Silently fail - default rate will be used on next call
+      // No need to throw exception since we have fallback
     }
   }
 }

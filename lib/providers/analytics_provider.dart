@@ -83,35 +83,24 @@ final analyticsExpensePredictionsProvider = Provider<Map<String, dynamic>>((ref)
 });
 
 /// Inflation Impact Provider
-/// Calculates inflation impact on expenses
+/// Calculates inflation impact on expenses using API inflation rate
 /// Used by Analytics screen
 final inflationImpactProvider = Provider<Map<String, dynamic>>((ref) {
-  final inflationItems = ref.watch(inflationItemsProvider);
+  final inflationRateAsync = ref.watch(inflationRateProvider);
   final currentMonthSpending = ref.watch(currentMonthSpendingProvider);
   
-  if (inflationItems.value == null || inflationItems.value!.isEmpty) {
-    return {
-      'inflationRate': 0.0,
-      'inflationAmount': 0.0,
-      'averageInflation': 0.0,
-    };
-  }
-  
-  // Calculate average inflation rate from all items
-  final items = inflationItems.value!;
-  final totalInflation = items.fold(0.0, (sum, item) => sum + item.percentageChange.abs());
-  final averageInflation = totalInflation / items.length;
+  // Get inflation rate from API
+  final inflationRate = inflationRateAsync.value ?? 0.0;
   
   // Calculate inflation impact on current month spending
   final inflationAmount = currentMonthSpending > 0
-      ? (currentMonthSpending * averageInflation / 100)
+      ? (currentMonthSpending * inflationRate / 100)
       : 0.0;
   
   return {
-    'inflationRate': averageInflation,
+    'inflationRate': inflationRate,
     'inflationAmount': inflationAmount,
-    'averageInflation': averageInflation,
-    'itemCount': items.length,
+    'averageInflation': inflationRate,
   };
 });
 

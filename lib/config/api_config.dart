@@ -1,3 +1,7 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'dart:math' as math;
+
 /// API Configuration
 /// Stores API endpoints and keys for external services
 class ApiConfig {
@@ -5,12 +9,63 @@ class ApiConfig {
   static const String apiNinjasBaseUrl = 'https://api.api-ninjas.com/v1';
   static const String apiNinjasInflationEndpoint = '/inflation';
   
-  // Get API Ninjas key from environment or use placeholder
-  // In production, this should be stored securely (e.g., environment variables)
-  // For now, users need to register at https://api-ninjas.com and get their own key
+  // SharedPreferences key for storing API key
+  static const String _apiKeyPrefsKey = 'api_ninjas_key';
+  
+  // Get API Ninjas key from SharedPreferences, environment variable, or empty string
+  // Priority: SharedPreferences > Environment Variable > Empty
+  static Future<String> getApiNinjasKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedKey = prefs.getString(_apiKeyPrefsKey);
+      if (storedKey != null && storedKey.isNotEmpty) {
+        return storedKey;
+      }
+    } catch (e) {
+      // If SharedPreferences fails, fall back to environment variable
+    }
+    
+    // Fall back to environment variable
+    return const String.fromEnvironment('API_NINJAS_KEY', defaultValue: '');
+  }
+  
+  // Save API Ninjas key to SharedPreferences
+  static Future<bool> saveApiNinjasKey(String key) async {
+    try {
+      // Trim whitespace and validate
+      final trimmedKey = key.trim();
+      if (trimmedKey.isEmpty) {
+        return false;
+      }
+      
+      // Basic validation: API Ninjas keys are typically alphanumeric with possible special chars
+      // Check for suspicious patterns (like == in the middle, which might indicate a copy-paste error)
+      if (trimmedKey.contains('==') && trimmedKey.indexOf('==') < trimmedKey.length - 2) {
+        // == found not at the end - might be two keys concatenated or copy-paste error
+        // But we'll still save it and let the API validate it
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      final success = await prefs.setString(_apiKeyPrefsKey, trimmedKey);
+      
+      // Verify it was saved correctly
+      if (success) {
+        final saved = prefs.getString(_apiKeyPrefsKey);
+        final verified = saved == trimmedKey;
+        return verified;
+      }
+      
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  // Get API Ninjas key synchronously (for backward compatibility)
+  // This will only return environment variable, not SharedPreferences
+  // Use getApiNinjasKey() for full functionality
+  @Deprecated('Use getApiNinjasKey() instead for SharedPreferences support')
   static String get apiNinjasKey {
-    // TODO: Replace with actual API key from environment variables or secure storage
-    // For development, you can temporarily hardcode here, but remove before production
     return const String.fromEnvironment('API_NINJAS_KEY', defaultValue: '');
   }
   

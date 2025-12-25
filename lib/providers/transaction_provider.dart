@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/transaction_service.dart';
 import '../models/transaction_model.dart';
+import 'auth_provider.dart';
 
 /// Transaction Service Provider
 final transactionServiceProvider = Provider<TransactionService>((ref) {
@@ -10,8 +11,23 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
 /// Transactions Stream Provider
 /// Streams all transactions for the current user
 /// Used by Dashboard, Expenses List, Budget Planner, Analytics
+/// Reactive to auth state changes - will update when user logs in/out
 final transactionsProvider = StreamProvider<List<TransactionModel>>((ref) {
   final transactionService = ref.watch(transactionServiceProvider);
+  // Watch auth state to rebuild stream when user logs in/out
+  final authState = ref.watch(authStateProvider);
+  
+  // If auth state is loading, return empty stream temporarily
+  if (authState.isLoading) {
+    return Stream.value([]);
+  }
+  
+  // If user is not authenticated, return empty stream
+  if (authState.value == null) {
+    return Stream.value([]);
+  }
+  
+  // Return transactions stream for authenticated user
   return transactionService.getTransactions();
 });
 

@@ -1,7 +1,9 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification_model.dart';
+import '../utils/currency_formatter.dart';
 
 /// Service for handling Firebase Cloud Messaging (FCM) notifications
 /// Handles push notifications and deep linking
@@ -11,34 +13,130 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  SharedPreferences? _prefs;
 
   // Get current user ID
   String? get _currentUserId => _auth.currentUser?.uid;
 
+  /// Initialize SharedPreferences
+  Future<void> _initPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  /// Check if notifications are enabled
+  Future<bool> _areNotificationsEnabled() async {
+    await _initPrefs();
+    return _prefs?.getBool('pref_notifications_enabled') ?? true;
+  }
+
+  /// Check if budget alerts are enabled
+  Future<bool> _areBudgetAlertsEnabled() async {
+    await _initPrefs();
+    return _prefs?.getBool('pref_budget_alerts_enabled') ?? true;
+  }
+
+  /// Check if inflation alerts are enabled
+  Future<bool> _areInflationAlertsEnabled() async {
+    await _initPrefs();
+    return _prefs?.getBool('pref_inflation_alerts_enabled') ?? true;
+  }
+
+  /// Check if spending alerts are enabled
+  Future<bool> _areSpendingAlertsEnabled() async {
+    await _initPrefs();
+    return _prefs?.getBool('pref_spending_alerts_enabled') ?? true;
+  }
+
+  /// Get currency from preferences
+  Future<String> _getCurrency() async {
+    await _initPrefs();
+    return _prefs?.getString('pref_currency') ?? 'PHP (₱)';
+  }
+
   /// Initialize notification service
   /// Request permissions and set up message handlers
   Future<void> initialize() async {
-    // Request permission for iOS
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      // Request permission for iOS (Android doesn't need this)
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      // Get FCM token
-      final token = await _messaging.getToken();
-      if (token != null && _currentUserId != null) {
-        await _saveTokenToFirestore(token);
-      }
+      // For Android, permission is granted by default
+      // For iOS, check if authorized
+      final isAuthorized = settings.authorizationStatus == AuthorizationStatus.authorized ||
+                          settings.authorizationStatus == AuthorizationStatus.provisional;
 
-      // Listen for token refresh
-      _messaging.onTokenRefresh.listen((newToken) {
-        if (_currentUserId != null) {
-          _saveTokenToFirestore(newToken);
+      if (isAuthorized) {
+        // Get FCM token (works for both Android and iOS)
+        final token = await _messaging.getToken();
+        if (token != null && _currentUserId != null) {
+          await _saveTokenToFirestore(token);
         }
-      });
+
+        // Set up foreground message handler
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          // Handle foreground messages here
+          // You can show local notifications or update UI
+          _handleForegroundMessage(message);
+        });
+
+        // Set up message opened handler (when user taps notification)
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          // Handle notification tap here
+          _handleNotificationTap(message);
+        });
+
+        // Check if app was opened from a notification
+        final initialMessage = await _messaging.getInitialMessage();
+        if (initialMessage != null) {
+          _handleNotificationTap(initialMessage);
+        }
+
+        // Listen for token refresh
+        _messaging.onTokenRefresh.listen((newToken) async {
+          // Wait a bit to ensure user is logged in
+          await Future.delayed(const Duration(seconds: 1));
+          if (_currentUserId != null) {
+            await _saveTokenToFirestore(newToken);
+          }
+        });
+      }
+    } catch (e) {
+      // Silently fail - notification initialization errors shouldn't crash the app
     }
+  }
+
+  /// Handle foreground messages (when app is open)
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    // You can show a local notification or update UI here
+    // For now, we'll just create an in-app notification in Firestore
+    try {
+      if (_currentUserId != null) {
+        final notification = NotificationModel(
+          type: message.data['type'] ?? 'general',
+          title: message.notification?.title ?? message.data['title'] ?? 'Notification',
+          message: message.notification?.body ?? message.data['body'] ?? '',
+          timestamp: message.sentTime ?? DateTime.now(),
+          isRead: false,
+          metadata: message.data,
+        );
+        await createNotification(notification);
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  /// Handle notification tap
+  void _handleNotificationTap(RemoteMessage message) {
+    // Extract deep link and navigate
+    // This will be handled by the app's navigation system
+    final deepLink = getDeepLinkFromNotification(message);
+    // Navigation will be handled by the UI layer
   }
 
   /// Save FCM token to Firestore
@@ -47,10 +145,11 @@ class NotificationService {
       final userId = _currentUserId;
       if (userId == null) return;
 
-      await _firestore.collection('users').doc(userId).update({
+      // Use set with merge to handle cases where user document might not exist
+      await _firestore.collection('users').doc(userId).set({
         'fcmToken': token,
         'fcmTokenUpdatedAt': DateTime.now().toIso8601String(),
-      });
+      }, SetOptions(merge: true));
     } catch (e) {
       // Silently fail - token saving is not critical
     }
@@ -160,14 +259,20 @@ class NotificationService {
     required double spent,
   }) async {
     try {
+      // Check if notifications and budget alerts are enabled
+      if (!await _areNotificationsEnabled() || !await _areBudgetAlertsEnabled()) {
+        return;
+      }
+
       final userId = _currentUserId;
       if (userId == null) return;
 
       final exceeded = spent - limit;
+      final currency = await _getCurrency();
       final notification = NotificationModel(
         type: 'budgetExceeded',
         title: 'Budget Limit Exceeded',
-        message: 'You have exceeded your $category budget by ₱${exceeded.toStringAsFixed(2)}',
+        message: 'You have exceeded your $category budget by ${CurrencyFormatter.format(exceeded, currency, decimals: 2)}',
         timestamp: DateTime.now(),
         isRead: false,
         category: category,
@@ -179,6 +284,13 @@ class NotificationService {
       );
 
       await createNotification(notification);
+      
+      // Send push notification
+      await _sendPushNotification(
+        title: notification.title,
+        body: notification.message,
+        data: {'type': 'budget', 'screen': '/budget-planner'},
+      );
     } catch (e) {
       // Silently fail - notification creation is not critical
     }
@@ -192,14 +304,20 @@ class NotificationService {
     required double percentage,
   }) async {
     try {
+      // Check if notifications and budget alerts are enabled
+      if (!await _areNotificationsEnabled() || !await _areBudgetAlertsEnabled()) {
+        return;
+      }
+
       final userId = _currentUserId;
       if (userId == null) return;
 
       final remaining = limit - spent;
+      final currency = await _getCurrency();
       final notification = NotificationModel(
         type: 'budgetExceeded',
         title: 'Budget Limit Warning',
-        message: 'You are at ${percentage.toStringAsFixed(0)}% of your $category budget. ₱${remaining.toStringAsFixed(2)} remaining.',
+        message: 'You are at ${percentage.toStringAsFixed(0)}% of your $category budget. ${CurrencyFormatter.format(remaining, currency, decimals: 2)} remaining.',
         timestamp: DateTime.now(),
         isRead: false,
         category: category,
@@ -212,6 +330,13 @@ class NotificationService {
       );
 
       await createNotification(notification);
+      
+      // Send push notification
+      await _sendPushNotification(
+        title: notification.title,
+        body: notification.message,
+        data: {'type': 'budget', 'screen': '/budget-planner'},
+      );
     } catch (e) {
       // Silently fail
     }
@@ -226,6 +351,11 @@ class NotificationService {
     required double previousPrice,
   }) async {
     try {
+      // Check if notifications and inflation alerts are enabled
+      if (!await _areNotificationsEnabled() || !await _areInflationAlertsEnabled()) {
+        return;
+      }
+
       final userId = _currentUserId;
       if (userId == null) return;
 
@@ -245,8 +375,44 @@ class NotificationService {
       );
 
       await createNotification(notification);
+      
+      // Send push notification
+      await _sendPushNotification(
+        title: notification.title,
+        body: notification.message,
+        data: {'type': 'inflation', 'screen': '/inflation-tracker'},
+      );
     } catch (e) {
       // Silently fail
+    }
+  }
+
+  /// Send push notification via FCM
+  Future<void> _sendPushNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      // Check if notifications are enabled
+      if (!await _areNotificationsEnabled()) {
+        return;
+      }
+
+      // Get FCM token from Firestore
+      final userId = _currentUserId;
+      if (userId == null) return;
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final fcmToken = userDoc.data()?['fcmToken'] as String?;
+
+      if (fcmToken == null) return;
+
+      // Note: In a production app, you would send notifications via a backend server
+      // For now, we'll just create in-app notifications
+      // Push notifications should be sent from your backend using the FCM Admin SDK
+    } catch (e) {
+      // Silently fail - push notifications are not critical
     }
   }
 
@@ -259,6 +425,11 @@ class NotificationService {
     String? category,
   }) async {
     try {
+      // Check if notifications and spending alerts are enabled
+      if (!await _areNotificationsEnabled() || !await _areSpendingAlertsEnabled()) {
+        return;
+      }
+
       final userId = _currentUserId;
       if (userId == null) return;
 
@@ -269,10 +440,11 @@ class NotificationService {
 
       String title;
       String message;
+      final currency = await _getCurrency();
 
       if (category != null) {
         title = 'Spending Prediction for $category';
-        message = 'Your $category expenses are predicted to be ₱${predictedAmount.toStringAsFixed(2)} $period';
+        message = 'Your $category expenses are predicted to be ${CurrencyFormatter.format(predictedAmount, currency, decimals: 2)} $period';
       } else {
         title = 'Upcoming Month Prediction';
         if (changePercent > 10) {
@@ -280,7 +452,7 @@ class NotificationService {
         } else if (changePercent < -10) {
           message = 'Your expenses are predicted to decrease by ${changePercent.abs().toStringAsFixed(1)}% $period';
         } else {
-          message = 'Your expenses are predicted to be ₱${predictedAmount.toStringAsFixed(2)} $period';
+          message = 'Your expenses are predicted to be ${CurrencyFormatter.format(predictedAmount, currency, decimals: 2)} $period';
         }
       }
 
@@ -314,16 +486,22 @@ class NotificationService {
     required String category,
   }) async {
     try {
+      // Check if notifications and budget alerts are enabled
+      if (!await _areNotificationsEnabled() || !await _areBudgetAlertsEnabled()) {
+        return;
+      }
+
       final userId = _currentUserId;
       if (userId == null) return;
 
       // If predicted spending exceeds budget, create alert
       if (predictedAmount > budgetLimit) {
         final exceeded = predictedAmount - budgetLimit;
+        final currency = await _getCurrency();
         final notification = NotificationModel(
           type: 'predictiveAlert',
           title: 'Budget Warning: $category',
-          message: 'Your predicted spending (₱${predictedAmount.toStringAsFixed(0)}) exceeds your $category budget by ₱${exceeded.toStringAsFixed(0)}',
+          message: 'Your predicted spending (${CurrencyFormatter.format(predictedAmount, currency)}) exceeds your $category budget by ${CurrencyFormatter.format(exceeded, currency)}',
           timestamp: DateTime.now(),
           isRead: false,
           category: category,
@@ -335,6 +513,13 @@ class NotificationService {
         );
 
         await createNotification(notification);
+        
+        // Send push notification
+        await _sendPushNotification(
+          title: notification.title,
+          body: notification.message,
+          data: {'type': 'budget', 'screen': '/budget-planner'},
+        );
       }
     } catch (e) {
       // Silently fail

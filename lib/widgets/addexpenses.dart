@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../models/transaction_model.dart';
+import '../utils/currency_formatter.dart';
+import '../widgets/flower_petals_menu.dart';
 
 class AddExpenseIncomeScreen extends ConsumerStatefulWidget {
   const AddExpenseIncomeScreen({super.key});
@@ -20,6 +23,8 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
   bool _isExpense = true; // true for expense, false for income
   String? _receiptPath;
   bool _isSaving = false;
+  Timer? _saveButtonTapTimer;
+  DateTime? _lastSaveButtonTap;
 
   final List<String> _expenseCategories = [
     'Food',
@@ -44,7 +49,43 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
+    _saveButtonTapTimer?.cancel();
     super.dispose();
+  }
+  
+  void _handleSaveButtonTap(BuildContext buttonContext) {
+    final now = DateTime.now();
+    _saveButtonTapTimer?.cancel();
+    
+    if (_lastSaveButtonTap != null && now.difference(_lastSaveButtonTap!) < const Duration(milliseconds: 400)) {
+      // Double tap detected - show menu
+      _lastSaveButtonTap = null;
+      _showFlowerPetalsMenu(buttonContext);
+    } else {
+      // Single tap - save transaction immediately
+      _lastSaveButtonTap = now;
+      _saveTransaction();
+    }
+  }
+  
+  void _handleSaveButtonLongPress(BuildContext buttonContext) {
+    // Long press shows menu
+    _saveButtonTapTimer?.cancel();
+    _lastSaveButtonTap = null;
+    _showFlowerPetalsMenu(buttonContext);
+  }
+  
+  void _showFlowerPetalsMenu(BuildContext buttonContext) {
+    final RenderBox? renderBox = buttonContext.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      final centerPosition = Offset(
+        position.dx + size.width / 2,
+        position.dy + size.height / 2,
+      );
+      FlowerPetalsMenu.show(context, centerPosition);
+    }
   }
 
   String? _validateAmount(String? value) {
@@ -194,9 +235,10 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
   @override
   Widget build(BuildContext context) {
     final categories = _isExpense ? _expenseCategories : _incomeCategories;
+    final currency = ref.watch(currencyProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -239,15 +281,15 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                       Container(
                         margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.15),
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
+                              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -282,7 +324,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                     children: [
                                       Icon(
                                         Icons.arrow_upward_rounded,
-                                        color: _isExpense ? Colors.white : Colors.grey.shade600,
+                                        color: _isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                                         size: 22,
                                       ),
                                       const SizedBox(width: 8),
@@ -291,7 +333,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: _isExpense ? Colors.white : Colors.grey.shade700,
+                                          color: _isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                                           letterSpacing: -0.3,
                                         ),
                                       ),
@@ -327,7 +369,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                     children: [
                                       Icon(
                                         Icons.arrow_downward_rounded,
-                                        color: !_isExpense ? Colors.white : Colors.grey.shade600,
+                                        color: !_isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                                         size: 22,
                                       ),
                                       const SizedBox(width: 8),
@@ -336,7 +378,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: !_isExpense ? Colors.white : Colors.grey.shade700,
+                                          color: !_isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
                                           letterSpacing: -0.3,
                                         ),
                                       ),
@@ -362,26 +404,26 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                           labelText: 'Amount',
                           hintText: 'Enter amount',
                           prefixIcon: const Icon(Icons.attach_money_rounded, size: 22),
-                          prefixText: '₱ ',
-                          prefixStyle: const TextStyle(
+                          prefixText: '${CurrencyFormatter.extractSymbol(currency)} ',
+                          prefixStyle: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF4A90E2),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                         ),
                         validator: _validateAmount,
@@ -391,10 +433,10 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                       // Category Dropdown
                       DropdownButtonFormField<String>(
                         value: _selectedCategory,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         decoration: InputDecoration(
                           labelText: 'Category',
@@ -402,18 +444,18 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                           prefixIcon: const Icon(Icons.category_rounded, size: 22),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                         ),
                         items: categories.map((category) {
@@ -428,7 +470,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                           });
                         },
                         validator: _validateCategory,
-                        dropdownColor: Colors.white,
+                        dropdownColor: Theme.of(context).colorScheme.surface,
                         icon: const Icon(Icons.arrow_drop_down_rounded),
                       ),
                       const SizedBox(height: 20),
@@ -439,16 +481,16 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                         child: Container(
                           constraints: const BoxConstraints(minHeight: 56),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.grey.withOpacity(0.3),
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                             ),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_today_rounded, size: 22, color: Color(0xFF4A90E2)),
+                              Icon(Icons.calendar_today_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
@@ -459,17 +501,17 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                       'Date',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ],
@@ -477,7 +519,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                               ),
                               Icon(
                                 Icons.arrow_drop_down_rounded,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ],
                           ),
@@ -499,18 +541,18 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                           prefixIcon: const Icon(Icons.note_outlined, size: 22),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.all(16),
                         ),
                       ),
@@ -537,10 +579,10 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               side: BorderSide(
-                                color: const Color(0xFF4A90E2).withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                                 width: 1.5,
                               ),
-                              foregroundColor: const Color(0xFF4A90E2),
+                              foregroundColor: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         )
@@ -548,15 +590,15 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: const Color(0xFF4A90E2).withOpacity(0.3),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
+                                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -568,12 +610,12 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.receipt_rounded,
-                                  color: Color(0xFF4A90E2),
+                                  color: Theme.of(context).colorScheme.primary,
                                   size: 20,
                                 ),
                               ),
@@ -582,12 +624,12 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Receipt attached',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
-                                        color: Colors.black87,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -595,7 +637,7 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                                       _receiptPath!,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -605,39 +647,55 @@ class _AddExpenseIncomeScreenState extends ConsumerState<AddExpenseIncomeScreen>
                               IconButton(
                                 icon: const Icon(Icons.close_rounded, size: 20),
                                 onPressed: _removeReceipt,
-                                color: const Color(0xFFE74C3C),
+                                color: Theme.of(context).colorScheme.error,
                               ),
                             ],
                           ),
                         ),
                       const SizedBox(height: 32),
 
-                      // Save Button
-                      SizedBox(
-                        height: 56,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saveTransaction,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isExpense
-                                ? const Color(0xFFE74C3C)
-                                : const Color(0xFF27AE60),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                          ),
-                          child: Text(
-                            'Save ${_isExpense ? 'Expense' : 'Income'}',
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                        ),
+                      // Save Button with Double Tap Menu
+                      Builder(
+                        builder: (buttonContext) {
+                          return Column(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _handleSaveButtonTap(buttonContext),
+                                onLongPress: () => _handleSaveButtonLongPress(buttonContext),
+                                child: Container(
+                                  height: 56,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: _isExpense
+                                        ? const Color(0xFFE74C3C)
+                                        : const Color(0xFF27AE60),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Save ${_isExpense ? 'Expense' : 'Income'}',
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: -0.3,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Double tap for menu',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                     ],

@@ -18,6 +18,8 @@ export 'analytics_provider.dart' show
 export 'notification_provider.dart';
 export 'upcoming_bills_provider.dart';
 export 'bill_provider.dart';
+export 'suggestion_provider.dart';
+export 'preferences_provider.dart';
 export '../models/upcoming_bill_model.dart' show UpcomingBillModel;
 export '../models/bill_model.dart' show BillModel;
 

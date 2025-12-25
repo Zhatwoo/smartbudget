@@ -52,6 +52,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
 
+    // Initialize notification service if user is authenticated
+    if (isAuthenticated) {
+      try {
+        final notificationService = ref.read(notificationServiceProvider);
+        await notificationService.initialize();
+      } catch (e) {
+        // Silently fail - notification initialization errors shouldn't block app
+      }
+    }
+
+    if (!mounted) return;
+
     if (!hasSeenOnboarding) {
       Navigator.of(context).pushReplacementNamed('/onboarding');
     } else if (!isAuthenticated) {

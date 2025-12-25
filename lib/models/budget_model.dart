@@ -52,13 +52,31 @@ class BudgetModel {
 
   // Create from Firestore document
   factory BudgetModel.fromMap(String id, Map<String, dynamic> map) {
+    // Safe date parsing with fallback
+    DateTime parseDate(dynamic dateValue) {
+      if (dateValue == null) {
+        return DateTime.now();
+      }
+      if (dateValue is DateTime) {
+        return dateValue;
+      }
+      if (dateValue is String) {
+        try {
+          return DateTime.parse(dateValue);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
+    }
+
     return BudgetModel(
       id: id,
       category: map['category'] ?? '',
       limit: (map['limit'] ?? 0).toDouble(),
       spent: (map['spent'] ?? 0).toDouble(),
-      startDate: DateTime.parse(map['startDate']),
-      endDate: DateTime.parse(map['endDate']),
+      startDate: parseDate(map['startDate']),
+      endDate: parseDate(map['endDate']),
       userId: map['userId'],
     );
   }

@@ -55,15 +55,7 @@ ls -la ios/Runner/GoogleService-Info.plist
 
 ---
 
-## 🔧 **STEP 4: Verify Bundle ID Match**
-
-### Check your Bundle ID:
-1. **Open** `ios/Runner.xcworkspace` sa Xcode
-2. **Select** "Runner" project (left sidebar)
-3. **Select** "Runner" target
-4. **Go to** "General" tab
-5. **Check** "Bundle Identifier" - dapat `com.smartbudgetios.ph`
-
+ 
 **If different:**
 - Update Bundle ID sa Xcode to match Firebase (`com.smartbudgetios.ph`)
 - OR update Firebase app registration to match Xcode Bundle ID

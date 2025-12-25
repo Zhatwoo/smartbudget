@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/providers.dart';
 import '../services/inflation_service.dart';
 import '../config/api_config.dart';
@@ -46,26 +48,17 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
         final errorString = e.toString();
         
         // Provide user-friendly error messages
-        if (errorString.contains('API key not configured')) {
-          errorMessage = 'API key not configured. Please set up your API Ninjas key.';
-        } else if (errorString.contains('Invalid API key')) {
-          errorMessage = 'Invalid API key. Please check your API Ninjas key and try again.';
-        } else if (errorString.contains('No internet connection') || errorString.contains('network')) {
-          errorMessage = 'No internet connection. Please check your network settings.';
+        if (errorString.contains('No internet connection') || errorString.contains('network')) {
+          errorMessage = 'No internet connection. Using default inflation rate. Please check your network settings.';
         } else if (errorString.contains('timeout') || errorString.contains('Timeout')) {
-          errorMessage = 'Request timed out. Please try again later.';
+          errorMessage = 'Request timed out. Using default inflation rate. Please try again later.';
         } else if (errorString.contains('rate limit')) {
-          errorMessage = 'API rate limit exceeded. Please try again later.';
+          errorMessage = 'API rate limit exceeded. Using default inflation rate. Please try again later.';
         } else if (errorString.contains('Unable to fetch')) {
-          // Extract the actual error message if available
-          final match = RegExp(r'Unable to fetch inflation data: (.+)').firstMatch(errorString);
-          if (match != null) {
-            errorMessage = match.group(1) ?? 'Unable to fetch inflation data. Please check your internet connection and API key.';
-          } else {
-            errorMessage = 'Unable to fetch inflation data. Please check your internet connection and API key.';
-          }
+          errorMessage = 'Unable to fetch latest data. Using default inflation rate.';
         } else {
-          errorMessage = errorString.length > 80 ? errorString.substring(0, 80) + "..." : errorString;
+          // Show generic error message (service will use default rates)
+          errorMessage = 'Using default inflation rate. Data will update when connection is available.';
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +88,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     final historicalRatesAsync = ref.watch(historicalInflationProvider);
     
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -149,10 +142,10 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.15),
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                             width: 1.5,
                           ),
                         ),
@@ -160,7 +153,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                           children: [
                             Icon(
                               Icons.public_rounded,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -168,7 +161,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                               ApiConfig.defaultCountry,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -236,15 +229,15 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -257,7 +250,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             'Current Inflation Rate',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -285,7 +278,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -328,15 +321,15 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -350,7 +343,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.3,
             ),
           ),
@@ -373,15 +366,15 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -395,7 +388,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.3,
             ),
           ),
@@ -411,7 +404,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                     'Month ${index + 1}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -470,7 +463,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             'Inflation rate measures how much prices increase over time. A higher rate means prices are rising faster. This data is fetched from API Ninjas and represents the general inflation rate for ${ApiConfig.defaultCountry}.',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),
@@ -483,10 +476,10 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -495,7 +488,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
           Icon(
             Icons.key_off_rounded,
             size: 48,
-            color: Colors.grey.shade300,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
@@ -503,7 +496,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -511,7 +504,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             'Please configure your API Ninjas key to view inflation data.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -676,6 +669,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
                 
                 // Save API key
                 final success = await ApiConfig.saveApiNinjasKey(key);
+                
                 if (success) {
                   // Close dialog first
                   if (context.mounted) {
@@ -729,10 +723,10 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -746,10 +740,10 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -758,7 +752,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
           Icon(
             Icons.error_outline_rounded,
             size: 48,
-            color: Colors.grey.shade300,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
@@ -766,7 +760,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -774,7 +768,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             error.length > 100 ? error.substring(0, 100) + '...' : error,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -787,10 +781,10 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -799,7 +793,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
           Icon(
             Icons.show_chart_rounded,
             size: 48,
-            color: Colors.grey.shade300,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
@@ -807,7 +801,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -815,7 +809,7 @@ class _InflationTrackerScreenState extends ConsumerState<InflationTrackerScreen>
             'Historical data will appear here once available.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),

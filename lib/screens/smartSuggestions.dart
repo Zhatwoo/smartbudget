@@ -1,133 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
+import '../models/suggestion_model.dart';
+import '../utils/currency_formatter.dart';
 
-class SmartSuggestionsScreen extends StatefulWidget {
+class SmartSuggestionsScreen extends ConsumerStatefulWidget {
   const SmartSuggestionsScreen({super.key});
 
   @override
-  State<SmartSuggestionsScreen> createState() => _SmartSuggestionsScreenState();
+  ConsumerState<SmartSuggestionsScreen> createState() => _SmartSuggestionsScreenState();
 }
 
-class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
-  final List<Suggestion> _suggestions = [
-    Suggestion(
-      id: '1',
-      itemName: 'Rice',
-      currentPrice: 55.00,
-      currentStore: 'SM Supermarket',
-      alternatives: [
-        Alternative(
-          storeName: 'Puregold',
-          price: 52.00,
-          distance: '2.5 km',
-          address: '123 Main Street, Quezon City',
-          savings: 3.00,
-        ),
-        Alternative(
-          storeName: 'Robinsons',
-          price: 53.50,
-          distance: '1.8 km',
-          address: '456 EDSA, Mandaluyong',
-          savings: 1.50,
-        ),
-        Alternative(
-          storeName: 'Metro Market',
-          price: 51.00,
-          distance: '3.2 km',
-          address: '789 Ayala Avenue, Makati',
-          savings: 4.00,
-        ),
-      ],
-      icon: Icons.rice_bowl,
-      color: const Color(0xFFE74C3C),
-    ),
-    Suggestion(
-      id: '2',
-      itemName: 'Milk',
-      currentPrice: 85.00,
-      currentStore: 'SM Supermarket',
-      alternatives: [
-        Alternative(
-          storeName: 'Puregold',
-          price: 82.00,
-          distance: '2.5 km',
-          address: '123 Main Street, Quezon City',
-          savings: 3.00,
-        ),
-        Alternative(
-          storeName: 'Metro Market',
-          price: 80.00,
-          distance: '3.2 km',
-          address: '789 Ayala Avenue, Makati',
-          savings: 5.00,
-        ),
-      ],
-      icon: Icons.local_drink,
-      color: const Color(0xFF4A90E2),
-    ),
-    Suggestion(
-      id: '3',
-      itemName: 'Eggs',
-      currentPrice: 8.50,
-      currentStore: 'SM Supermarket',
-      alternatives: [
-        Alternative(
-          storeName: 'Robinsons',
-          price: 8.00,
-          distance: '1.8 km',
-          address: '456 EDSA, Mandaluyong',
-          savings: 0.50,
-        ),
-        Alternative(
-          storeName: 'Puregold',
-          price: 7.80,
-          distance: '2.5 km',
-          address: '123 Main Street, Quezon City',
-          savings: 0.70,
-        ),
-      ],
-      icon: Icons.egg,
-      color: const Color(0xFFF39C12),
-    ),
-    Suggestion(
-      id: '4',
-      itemName: 'Gasoline',
-      currentPrice: 65.50,
-      currentStore: 'Shell Station',
-      alternatives: [
-        Alternative(
-          storeName: 'Petron',
-          price: 64.00,
-          distance: '1.2 km',
-          address: '321 Ortigas Avenue, Pasig',
-          savings: 1.50,
-        ),
-        Alternative(
-          storeName: 'Caltex',
-          price: 63.50,
-          distance: '2.1 km',
-          address: '654 Shaw Boulevard, Mandaluyong',
-          savings: 2.00,
-        ),
-      ],
-      icon: Icons.local_gas_station,
-      color: const Color(0xFF27AE60),
-    ),
-  ];
-
+class _SmartSuggestionsScreenState extends ConsumerState<SmartSuggestionsScreen> {
   final List<String> _watchlist = [];
+  SuggestionType? _selectedFilter;
 
-  void _addToWatchlist(String itemName) {
+  void _addToWatchlist(String suggestionId) {
     setState(() {
-      if (!_watchlist.contains(itemName)) {
-        _watchlist.add(itemName);
+      if (!_watchlist.contains(suggestionId)) {
+        _watchlist.add(suggestionId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$itemName added to watchlist'),
+            content: const Text('Suggestion added to watchlist'),
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
                 setState(() {
-                  _watchlist.remove(itemName);
+                  _watchlist.remove(suggestionId);
                 });
               },
             ),
@@ -135,139 +34,22 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$itemName is already in watchlist')),
+          const SnackBar(content: Text('Suggestion is already in watchlist')),
         );
       }
     });
   }
 
-  void _removeFromWatchlist(String itemName) {
+  void _removeFromWatchlist(String suggestionId) {
     setState(() {
-      _watchlist.remove(itemName);
+      _watchlist.remove(suggestionId);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$itemName removed from watchlist')),
+        const SnackBar(content: Text('Suggestion removed from watchlist')),
       );
     });
   }
 
-  void _openMap(Alternative alternative) {
-    // TODO: Open map with store location
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        title: Text(
-          alternative.storeName,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDialogRow('Address', alternative.address),
-            const SizedBox(height: 12),
-            _buildDialogRow('Distance', alternative.distance),
-            const SizedBox(height: 12),
-            _buildDialogRow('Price', '₱${alternative.price.toStringAsFixed(0)}'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF27AE60).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.savings_rounded, color: Color(0xFF27AE60), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'You save: ₱${alternative.savings.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: Color(0xFF27AE60),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Close',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Open actual map application
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Opening map to ${alternative.storeName}...'),
-                  backgroundColor: const Color(0xFF4A90E2),
-                ),
-              );
-            },
-            icon: const Icon(Icons.map_rounded, size: 18),
-            label: const Text(
-              'Open Map',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A90E2),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDialogRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _viewStoreInfo(Alternative alternative, Suggestion suggestion) {
+  void _viewSuggestionDetails(Suggestion suggestion) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -276,9 +58,9 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -288,224 +70,215 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      alternative.storeName,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        letterSpacing: -0.5,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        suggestion.title,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      suggestion.itemName,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 6),
+                      Text(
+                        suggestion.category,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 22),
                   onPressed: () => Navigator.of(context).pop(),
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
             const SizedBox(height: 24),
 
-            // Price Comparison
+            // Priority Badge
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.15),
-                  width: 1.5,
+                color: _getPriorityColor(suggestion.priority).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _getPriorityText(suggestion.priority),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _getPriorityColor(suggestion.priority),
                 ),
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
+            ),
+            const SizedBox(height: 16),
+
+            // Description
+            Text(
+              suggestion.description,
+              style: TextStyle(
+                fontSize: 15,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Savings/Gain Display
+            if (suggestion.potentialSavings != null || suggestion.potentialGain != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: suggestion.type == SuggestionType.cutExpense
+                      ? const Color(0xFF27AE60).withOpacity(0.1)
+                      : const Color(0xFF4A90E2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      suggestion.type == SuggestionType.cutExpense
+                          ? Icons.savings_rounded
+                          : Icons.trending_up_rounded,
+                      color: suggestion.type == SuggestionType.cutExpense
+                          ? const Color(0xFF27AE60)
+                          : const Color(0xFF4A90E2),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Current Store',
+                            suggestion.type == SuggestionType.cutExpense
+                                ? 'Potential Savings'
+                                : 'Potential Gain',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '₱${suggestion.currentPrice.toStringAsFixed(0)}',
-                            style: const TextStyle(
+                            CurrencyFormatter.format(suggestion.potentialSavings ?? suggestion.potentialGain ?? 0, ref.read(currencyProvider)),
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFE74C3C),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            suggestion.currentStore,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+                              color: suggestion.type == SuggestionType.cutExpense
+                                  ? const Color(0xFF27AE60)
+                                  : const Color(0xFF4A90E2),
                             ),
                           ),
                         ],
                       ),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.grey.shade400,
-                        size: 20,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Alternative',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₱${alternative.price.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF27AE60),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            alternative.storeName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF27AE60).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.savings_rounded,
-                          color: Color(0xFF27AE60),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'You save ₱${alternative.savings.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF27AE60),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            const SizedBox(height: 24),
+
+            // Action Steps
+            Text(
+              'Action Steps',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+                letterSpacing: -0.3,
               ),
             ),
+            const SizedBox(height: 12),
+            ...suggestion.actionSteps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: suggestion.color.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: suggestion.color,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        step,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 24),
 
-            // Store Details
-            _buildDetailRow(Icons.location_on, 'Address', alternative.address),
-            _buildDetailRow(Icons.straighten, 'Distance', alternative.distance),
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _openMap(alternative);
-                    },
-                    icon: const Icon(Icons.map_rounded, size: 18),
-                    label: const Text(
-                      'Open Map',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(
-                        color: const Color(0xFF4A90E2).withOpacity(0.5),
-                        width: 1.5,
-                      ),
-                      foregroundColor: const Color(0xFF4A90E2),
-                    ),
+            // Action Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (_watchlist.contains(suggestion.id)) {
+                    _removeFromWatchlist(suggestion.id);
+                  } else {
+                    _addToWatchlist(suggestion.id);
+                  }
+                },
+                icon: Icon(
+                  _watchlist.contains(suggestion.id)
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  _watchlist.contains(suggestion.id)
+                      ? 'Remove from Watchlist'
+                      : 'Add to Watchlist',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _addToWatchlist(suggestion.itemName);
-                    },
-                    icon: Icon(
-                      _watchlist.contains(suggestion.itemName)
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      size: 18,
-                    ),
-                    label: Text(
-                      _watchlist.contains(suggestion.itemName)
-                          ? 'In Watchlist'
-                          : 'Add to Watchlist',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A90E2),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 0,
                 ),
-              ],
+              ),
             ),
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
           ],
@@ -514,62 +287,44 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A90E2).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: const Color(0xFF4A90E2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Color _getPriorityColor(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return const Color(0xFFE74C3C);
+      case Priority.medium:
+        return const Color(0xFFF39C12);
+      case Priority.low:
+        return const Color(0xFF27AE60);
+    }
+  }
+
+  String _getPriorityText(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return 'High Priority';
+      case Priority.medium:
+        return 'Medium Priority';
+      case Priority.low:
+        return 'Low Priority';
+    }
+  }
+
+  List<Suggestion> _filterSuggestions(List<Suggestion> suggestions) {
+    if (_selectedFilter == null) return suggestions;
+    return suggestions.where((s) => s.type == _selectedFilter).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final suggestions = ref.watch(allSuggestionsProvider);
+    final filteredSuggestions = _filterSuggestions(suggestions);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Custom Header (matching dashboard style)
+            // Custom Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(
@@ -618,22 +373,44 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
                                     shrinkWrap: true,
                                     itemCount: _watchlist.length,
                                     itemBuilder: (context, index) {
-                                      final item = _watchlist[index];
+                                      final suggestionId = _watchlist[index];
+                                      final suggestion = suggestions.firstWhere(
+                                        (s) => s.id == suggestionId,
+                                        orElse: () => suggestions.isNotEmpty 
+                                          ? suggestions.first 
+                                          : Suggestion(
+                                              id: suggestionId,
+                                              title: 'Unknown',
+                                              description: 'Suggestion not found',
+                                              category: 'Other',
+                                              type: SuggestionType.cutExpense,
+                                              priority: Priority.low,
+                                              icon: Icons.info_outline,
+                                              color: Colors.grey,
+                                              actionSteps: [],
+                                            ),
+                                      );
                                       return Container(
                                         margin: const EdgeInsets.only(bottom: 8),
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                           borderRadius: BorderRadius.circular(10),
                                           border: Border.all(
-                                            color: Colors.grey.withOpacity(0.15),
+                                            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                                           ),
                                         ),
                                         child: Row(
                                           children: [
+                                            Icon(
+                                              suggestion.icon,
+                                              color: suggestion.color,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
                                             Expanded(
                                               child: Text(
-                                                item,
+                                                suggestion.title,
                                                 style: const TextStyle(
                                                   fontSize: 15,
                                                   fontWeight: FontWeight.w600,
@@ -702,417 +479,301 @@ class _SmartSuggestionsScreenState extends State<SmartSuggestionsScreen> {
                 ],
               ),
             ),
-            Expanded(
-              child: _suggestions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          size: 64,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No suggestions available',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: _suggestions.length,
-                    itemBuilder: (context, index) {
-                final suggestion = _suggestions[index];
-                final bestAlternative = suggestion.alternatives.reduce(
-                  (a, b) => a.price < b.price ? a : b,
-                );
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.15),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+            // Filter Tabs
+            Container(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    _buildFilterChip('All', null),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Cut Expenses', SuggestionType.cutExpense),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Increase Income', SuggestionType.increaseIncome),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Investments', SuggestionType.invest),
+                  ],
+                ),
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: filteredSuggestions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline_rounded,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No suggestions available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedFilter == null
+                                ? 'Add transactions to see personalized suggestions'
+                                : 'No ${_getFilterLabel(_selectedFilter!)} suggestions',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                    ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: filteredSuggestions.length,
+                      itemBuilder: (context, index) {
+                        final suggestion = filteredSuggestions[index];
+                        return _buildSuggestionCard(suggestion);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, SuggestionType? filter) {
+    final isSelected = _selectedFilter == filter;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedFilter = selected ? filter : null;
+        });
+      },
+      selectedColor: const Color(0xFF4A90E2),
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  String _getFilterLabel(SuggestionType type) {
+    switch (type) {
+      case SuggestionType.cutExpense:
+        return 'cut expense';
+      case SuggestionType.increaseIncome:
+        return 'increase income';
+      case SuggestionType.invest:
+        return 'investment';
+    }
+  }
+
+  Widget _buildSuggestionCard(Suggestion suggestion) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _viewSuggestionDetails(suggestion),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: suggestion.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(
+                    suggestion.icon,
+                    color: suggestion.color,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Item Header
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              suggestion.title,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+                          if (_watchlist.contains(suggestion.id))
+                            const Icon(
+                              Icons.bookmark_rounded,
+                              color: Color(0xFF4A90E2),
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Container(
-                            width: 48,
-                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: suggestion.color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              color: _getPriorityColor(suggestion.priority).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Icon(
-                              suggestion.icon,
-                              color: suggestion.color,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        suggestion.itemName,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                          letterSpacing: -0.3,
-                                        ),
-                                      ),
-                                    ),
-                                    if (_watchlist.contains(suggestion.itemName))
-                                      const Icon(
-                                        Icons.bookmark_rounded,
-                                        color: Color(0xFF4A90E2),
-                                        size: 20,
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Currently at ${suggestion.currentStore}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              _getPriorityText(suggestion.priority),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _getPriorityColor(suggestion.priority),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Price Comparison
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Current Price',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '₱${suggestion.currentPrice.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFE74C3C),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    color: Colors.grey.shade400,
-                                    size: 20,
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        'Best Alternative',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '₱${bestAlternative.price.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF27AE60),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF27AE60).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.savings_rounded,
-                                      color: Color(0xFF27AE60),
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Save up to ₱${bestAlternative.savings.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF27AE60),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                      // Alternatives List
-                      Text(
-                        'Cheaper Alternatives (${suggestion.alternatives.length})',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...suggestion.alternatives.map((alternative) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.grey.withOpacity(0.15),
-                              width: 1.5,
-                            ),
-                          ),
-                            child: InkWell(
-                              onTap: () => _viewStoreInfo(alternative, suggestion),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              alternative.storeName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 15,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            if (alternative.price == bestAlternative.price)
-                                              Container(
-                                                margin: const EdgeInsets.only(left: 8),
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 3,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFF27AE60),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: const Text(
-                                                  'BEST',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on_rounded,
-                                              size: 14,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              alternative.distance,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        '₱${alternative.price.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF27AE60),
-                                        ),
-                                      ),
-                                      Text(
-                                        'Save ₱${alternative.savings.toStringAsFixed(0)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: const Icon(Icons.map_outlined, size: 20),
-                                    onPressed: () => _openMap(alternative),
-                                    tooltip: 'Open Map',
-                                    color: const Color(0xFF4A90E2),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-
-                      // Action Buttons
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _addToWatchlist(suggestion.itemName),
-                              icon: Icon(
-                                _watchlist.contains(suggestion.itemName)
-                                    ? Icons.bookmark_rounded
-                                    : Icons.bookmark_border_rounded,
-                                size: 18,
-                              ),
-                              label: Text(
-                                _watchlist.contains(suggestion.itemName)
-                                    ? 'In Watchlist'
-                                    : 'Add to Watchlist',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                side: BorderSide(
-                                  color: const Color(0xFF4A90E2).withOpacity(0.5),
-                                  width: 1.5,
-                                ),
-                                foregroundColor: const Color(0xFF4A90E2),
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            suggestion.category,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                );
-              },
+                ),
+              ],
             ),
+            const SizedBox(height: 16),
+
+            // Description
+            Text(
+              suggestion.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
               ),
-            ],
-          ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 16),
+
+            // Savings/Gain
+            if (suggestion.potentialSavings != null || suggestion.potentialGain != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: suggestion.type == SuggestionType.cutExpense
+                      ? const Color(0xFF27AE60).withOpacity(0.1)
+                      : const Color(0xFF4A90E2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      suggestion.type == SuggestionType.cutExpense
+                          ? Icons.savings_rounded
+                          : Icons.trending_up_rounded,
+                      color: suggestion.type == SuggestionType.cutExpense
+                          ? const Color(0xFF27AE60)
+                          : const Color(0xFF4A90E2),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      suggestion.type == SuggestionType.cutExpense
+                          ? 'Save up to ${CurrencyFormatter.format(suggestion.potentialSavings ?? 0, ref.read(currencyProvider))}/month'
+                          : 'Potential gain: ${CurrencyFormatter.format(suggestion.potentialGain ?? 0, ref.read(currencyProvider))}/month',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: suggestion.type == SuggestionType.cutExpense
+                            ? const Color(0xFF27AE60)
+                            : const Color(0xFF4A90E2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+
+            // Action Steps Preview
+            Text(
+              '${suggestion.actionSteps.length} action steps',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Action Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _viewSuggestionDetails(suggestion),
+                icon: const Icon(Icons.visibility_rounded, size: 18),
+                label: const Text(
+                  'View Details',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(
+                    color: suggestion.color.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                  foregroundColor: suggestion.color,
+                ),
+              ),
+            ),
+          ],
         ),
-      );    
+      ),
+    );
   }
 }
-// Models
-class Suggestion {
-  final String id;
-  final String itemName;
-  final double currentPrice;
-  final String currentStore;
-  final List<Alternative> alternatives;
-  final IconData icon;
-  final Color color;
-
-  Suggestion({
-    required this.id,
-    required this.itemName,
-    required this.currentPrice,
-    required this.currentStore,
-    required this.alternatives,
-    required this.icon,
-    required this.color,
-  });
-}
-
-class Alternative {
-  final String storeName;
-  final double price;
-  final String distance;
-  final String address;
-  final double savings;
-
-  Alternative({
-    required this.storeName,
-    required this.price,
-    required this.distance,
-    required this.address,
-    required this.savings,
-  });
-}
-
-

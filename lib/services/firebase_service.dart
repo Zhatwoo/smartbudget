@@ -334,6 +334,17 @@ class FirebaseService {
         userData,
         SetOptions(merge: true),
       );
+      
+      // Also create/update lookup entry for forgot password functionality
+      // This allows searching by username, mobile, or email without exposing other user data
+      if (email.isNotEmpty) {
+        await _firestore.collection('userLookups').doc(userId).set({
+          'email': email,
+          'username': username ?? email,
+          'mobileNumber': mobileNumber,
+          'userId': userId, // For reference only, not used in queries
+        }, SetOptions(merge: true));
+      }
     } catch (e) {
       throw Exception('Error initializing user profile: $e');
     }
@@ -369,6 +380,19 @@ class FirebaseService {
         userData,
         SetOptions(merge: true),
       );
+      
+      // Update lookup entry if username or mobileNumber changed
+      if (username != null || mobileNumber != null) {
+        final profile = await getUserProfile();
+        if (profile != null && profile['email'] != null) {
+          await _firestore.collection('userLookups').doc(userId).set({
+            'email': profile['email'],
+            'username': username ?? profile['username'] ?? profile['email'],
+            'mobileNumber': mobileNumber ?? profile['mobileNumber'],
+            'userId': userId,
+          }, SetOptions(merge: true));
+        }
+      }
     } catch (e) {
       throw Exception('Error updating user profile: $e');
     }
@@ -400,6 +424,79 @@ class FirebaseService {
   // Mark onboarding as completed
   Future<void> markOnboardingCompleted() async {
     await updateUserProfile(onboardingCompleted: true);
+  }
+
+  // Find user email by username, mobile number, or email
+  // This is used for forgot password functionality
+  // Uses userLookups collection which is publicly readable for forgot password only
+  Future<String?> findUserEmail({
+    String? username,
+    String? mobileNumber,
+    String? email,
+  }) async {
+    try {
+      // If email is provided and looks like an email, verify it exists
+      if (email != null && email.contains('@')) {
+        // Search in userLookups collection (publicly readable for forgot password)
+        final emailQuery = await _firestore
+            .collection('userLookups')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+        
+        if (emailQuery.docs.isNotEmpty) {
+          return email;
+        }
+        return null;
+      }
+
+      // Search by username
+      if (username != null && username.isNotEmpty) {
+        final usernameQuery = await _firestore
+            .collection('userLookups')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
+        
+        if (usernameQuery.docs.isNotEmpty) {
+          return usernameQuery.docs.first.data()['email'] as String?;
+        }
+      }
+
+      // Search by mobile number
+      if (mobileNumber != null && mobileNumber.isNotEmpty) {
+        // Normalize mobile number (remove spaces, dashes, etc.)
+        final normalizedMobile = mobileNumber.replaceAll(RegExp(r'[\s-]'), '');
+        
+        // Try original format first
+        final mobileQuery = await _firestore
+            .collection('userLookups')
+            .where('mobileNumber', isEqualTo: mobileNumber)
+            .limit(1)
+            .get();
+        
+        if (mobileQuery.docs.isNotEmpty) {
+          return mobileQuery.docs.first.data()['email'] as String?;
+        }
+        
+        // Try normalized version if different
+        if (normalizedMobile != mobileNumber) {
+          final normalizedQuery = await _firestore
+              .collection('userLookups')
+              .where('mobileNumber', isEqualTo: normalizedMobile)
+              .limit(1)
+              .get();
+          
+          if (normalizedQuery.docs.isNotEmpty) {
+            return normalizedQuery.docs.first.data()['email'] as String?;
+          }
+        }
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Error finding user email: $e');
+    }
   }
 }
 

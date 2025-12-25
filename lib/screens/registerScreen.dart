@@ -130,6 +130,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
           );
           
           if (!mounted) return;
+          
+          // Initialize notification service after successful registration
+          try {
+            final notificationService = ref.read(notificationServiceProvider);
+            await notificationService.initialize();
+          } catch (e) {
+            // Silently fail - notification initialization errors shouldn't block navigation
+          }
+          
           Navigator.of(context).pushReplacementNamed('/home');
         }
       } catch (e) {
@@ -298,7 +307,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF4A90E2),
         foregroundColor: Colors.white,
@@ -360,12 +369,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
           const SizedBox(height: 32),
 
           // Title
-          const Text(
+          Text(
             'Sign up with Gmail',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
@@ -379,7 +388,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                 : 'Connect your Google account',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
             textAlign: TextAlign.center,
@@ -397,7 +406,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
             ),
             const SizedBox(height: 20),
@@ -413,7 +422,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
             const SizedBox(height: 20),
@@ -429,7 +438,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
             ),
             const SizedBox(height: 32),
@@ -510,7 +519,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
               Text(
                 'Already have an account? ',
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 15,
                 ),
               ),
@@ -561,12 +570,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             const SizedBox(height: 32),
 
             // Title
-            const Text(
+            Text(
               'Sign up with Email',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
               textAlign: TextAlign.center,
@@ -583,7 +592,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -605,7 +614,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validateEmail,
             ),
@@ -621,7 +630,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validateUsername,
             ),
@@ -651,7 +660,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validatePassword,
             ),
@@ -681,7 +690,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: (value) => _validateConfirmPassword(
                 value,
@@ -731,7 +740,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                 Text(
                   'Already have an account? ',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 15,
                   ),
                 ),
@@ -783,12 +792,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
             const SizedBox(height: 32),
 
             // Title
-            const Text(
+            Text(
               'Sign up with Mobile',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
               textAlign: TextAlign.center,
@@ -805,7 +814,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -828,7 +837,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validateMobileNumber,
             ),
@@ -844,7 +853,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validateUsername,
             ),
@@ -874,7 +883,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: _validatePassword,
             ),
@@ -904,7 +913,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                   borderRadius: BorderRadius.circular(14),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
               ),
               validator: (value) => _validateConfirmPassword(
                 value,
@@ -954,7 +963,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> with SingleTick
                 Text(
                   'Already have an account? ',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 15,
                   ),
                 ),

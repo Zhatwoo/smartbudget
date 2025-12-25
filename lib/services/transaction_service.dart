@@ -18,43 +18,75 @@ class TransactionService {
   Future<String> addTransaction(TransactionModel transaction) async {
     try {
       final userId = _currentUserId;
-      if (userId == null) throw Exception('User not authenticated');
+      if (userId == null) {
+        throw Exception('User not authenticated. Please log in to save transactions.');
+      }
+
+      // Add userId to transaction data for easier querying
+      final transactionData = transaction.toMap();
+      transactionData['userId'] = userId;
 
       final docRef = await _firestore
           .collection('users')
           .doc(userId)
           .collection('transactions')
-          .add(transaction.toMap());
+          .add(transactionData);
 
       return docRef.id;
     } catch (e) {
+      // Provide more detailed error message
+      if (e.toString().contains('not authenticated')) {
+        rethrow;
+      }
       throw Exception('Error adding transaction: $e');
     }
   }
 
   /// Get all transactions for current user as a stream
   /// Returns a stream that emits updated transaction lists
+  /// SECURITY: Only returns transactions for the authenticated user
   Stream<List<TransactionModel>> getTransactions() {
     final userId = _currentUserId;
     if (userId == null) {
+      // Return empty stream if not authenticated
       return Stream.value([]);
     }
 
+    // SECURITY: Use nested collection structure to ensure user isolation
+    // Path: users/{userId}/transactions/{transactionId}
+    // This ensures Firestore rules can properly enforce user-level access
     return _firestore
         .collection('users')
-        .doc(userId)
+        .doc(userId) // Explicitly use authenticated user's ID
         .collection('transactions')
-        .orderBy('date', descending: true)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      // Additional security: Filter by userId in the data as well
+      final transactions = snapshot.docs
+          .where((doc) {
+            // Double-check that userId matches (extra security layer)
+            final data = doc.data();
+            final docUserId = data['userId'] as String?;
+            return docUserId == null || docUserId == userId;
+          })
           .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
           .toList();
+      
+      // Sort by date descending (most recent first)
+      transactions.sort((a, b) => b.date.compareTo(a.date));
+      
+      return transactions;
+    }).handleError((error, stackTrace) {
+      // Log error but don't crash - return empty list
+      // Error is handled silently to prevent crashes
+      return <TransactionModel>[];
     });
   }
 
   /// Get transactions by date range
   /// Returns a list of transactions within the specified date range
+  /// SECURITY: Only returns transactions for the authenticated user
   Future<List<TransactionModel>> getTransactionsByDateRange(
     DateTime startDate,
     DateTime endDate,
@@ -65,14 +97,20 @@ class TransactionService {
 
       final snapshot = await _firestore
           .collection('users')
-          .doc(userId)
+          .doc(userId) // Explicitly use authenticated user's ID
           .collection('transactions')
-          .where('date', isGreaterThanOrEqualTo: startDate.toIso8601String())
-          .where('date', isLessThanOrEqualTo: endDate.toIso8601String())
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('date', descending: true)
           .get();
 
+      // Additional security: Filter by userId in the data
       return snapshot.docs
+          .where((doc) {
+            final data = doc.data();
+            final docUserId = data['userId'] as String?;
+            return docUserId == null || docUserId == userId;
+          })
           .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {
@@ -82,6 +120,7 @@ class TransactionService {
 
   /// Get transactions by category
   /// Returns a list of transactions filtered by category
+  /// SECURITY: Only returns transactions for the authenticated user
   Future<List<TransactionModel>> getTransactionsByCategory(String category) async {
     try {
       final userId = _currentUserId;
@@ -89,13 +128,19 @@ class TransactionService {
 
       final snapshot = await _firestore
           .collection('users')
-          .doc(userId)
+          .doc(userId) // Explicitly use authenticated user's ID
           .collection('transactions')
           .where('category', isEqualTo: category)
           .orderBy('date', descending: true)
           .get();
 
+      // Additional security: Filter by userId in the data
       return snapshot.docs
+          .where((doc) {
+            final data = doc.data();
+            final docUserId = data['userId'] as String?;
+            return docUserId == null || docUserId == userId;
+          })
           .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
           .toList();
     } catch (e) {

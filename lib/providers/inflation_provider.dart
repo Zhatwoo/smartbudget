@@ -82,3 +82,20 @@ final inflationApiServiceProvider = FutureProvider<InflationApiService>((ref) as
   return InflationApiService(prefs: prefs);
 });
 
+/// Current Inflation Rate Provider
+/// Fetches the current inflation rate from API
+/// Used by Dashboard, Predictions, Analytics, and Inflation Tracker
+final inflationRateProvider = FutureProvider<double>((ref) async {
+  final inflationService = ref.watch(inflationServiceProvider);
+  final rate = await inflationService.getCurrentInflationRate();
+  return rate ?? 0.0; // Default to 0.0 if API fails
+});
+
+/// Historical Inflation Rates Provider
+/// Fetches historical inflation rates for the last 12 months
+/// Used by Inflation Tracker and Analytics
+final historicalInflationProvider = FutureProvider<List<double>>((ref) async {
+  final inflationService = ref.watch(inflationServiceProvider);
+  return await inflationService.getHistoricalInflationRates(12);
+});
+

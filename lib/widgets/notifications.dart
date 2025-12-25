@@ -137,7 +137,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -192,14 +192,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           Icon(
                             Icons.notifications_none_rounded,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No notifications',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -215,23 +215,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
-                          color: const Color(0xFF4A90E2).withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
                                 width: 8,
                                 height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF4A90E2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 '$unreadCount unread notification${unreadCount > 1 ? 's' : ''}',
-                                style: const TextStyle(
-                                  color: Color(0xFF4A90E2),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -272,17 +272,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: notification.isRead
-                                        ? Colors.grey.withOpacity(0.15)
+                                        ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
                                         : color.withOpacity(0.3),
                                     width: notification.isRead ? 1.5 : 2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
+                                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -327,7 +327,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                                         fontWeight: notification.isRead
                                                             ? FontWeight.w600
                                                             : FontWeight.bold,
-                                                        color: Colors.black87,
+                                                        color: Theme.of(context).colorScheme.onSurface,
                                                         letterSpacing: -0.2,
                                                       ),
                                                     ),
@@ -348,7 +348,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                                 notification.message,
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   fontWeight: FontWeight.w400,
                                                 ),
                                               ),
@@ -357,7 +357,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                                 _formatTimestamp(notification.timestamp),
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -368,7 +368,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                         // Action Button
                                         Icon(
                                           Icons.chevron_right_rounded,
-                                          color: Colors.grey.shade400,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           size: 20,
                                         ),
                                       ],
@@ -393,14 +393,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       Icon(
                         Icons.error_outline,
                         size: 64,
-                        color: Colors.grey.shade300,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Error loading notifications',
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -409,7 +409,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         error.toString(),
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         textAlign: TextAlign.center,
                       ),

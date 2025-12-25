@@ -29,7 +29,7 @@ class HamburgerSidebar extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
@@ -39,10 +39,10 @@ class HamburgerSidebar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Smart Budget',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -51,7 +51,7 @@ class HamburgerSidebar extends StatelessWidget {
                 Text(
                   'Inflation Tracker',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                     fontSize: 14,
                   ),
                 ),

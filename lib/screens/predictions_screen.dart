@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import '../providers/providers.dart';
+import '../models/budget_model.dart';
+import '../utils/currency_formatter.dart';
 
 class PredictionsScreen extends ConsumerWidget {
   const PredictionsScreen({super.key});
@@ -9,9 +11,57 @@ class PredictionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get data from providers (UI → Provider → Service → Firebase)
+    final transactionsAsync = ref.watch(transactionsProvider);
     final predictions = ref.watch(monthlyPredictionsProvider);
     final currentMonthSpending = ref.watch(currentMonthSpendingProvider);
     final futureSpending = ref.watch(futureSpendingPredictionProvider);
+    final budgetsAsync = ref.watch(budgetsProvider);
+    final budgets = budgetsAsync.value ?? [];
+    final currency = ref.watch(currencyProvider);
+
+    // Show loading if transactions are still loading
+    if (transactionsAsync.isLoading) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4A90E2),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Expense Predictions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Loading
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // Calculate statistics
     final averagePrediction = predictions.isEmpty
@@ -27,7 +77,7 @@ class PredictionsScreen extends ConsumerWidget {
         : predictions.map((p) => p.amount).reduce(math.min);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -58,7 +108,7 @@ class PredictionsScreen extends ConsumerWidget {
             ),
             // Content
             Expanded(
-              child: predictions.isEmpty
+              child: predictions.isEmpty || averagePrediction == 0.0
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -66,14 +116,14 @@ class PredictionsScreen extends ConsumerWidget {
                           Icon(
                             Icons.trending_up_outlined,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No predictions available',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -82,7 +132,7 @@ class PredictionsScreen extends ConsumerWidget {
                             'Add transactions to see predictions',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -94,21 +144,35 @@ class PredictionsScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Summary Card
-                          _buildSummaryCard(
-                            averagePrediction,
-                            currentMonthSpending,
-                            predictions.length,
-                          ),
-                          const SizedBox(height: 24),
+                          // Summary Card - only show if there's data
+                          if (averagePrediction > 0 && currentMonthSpending > 0) ...[
+                            _buildSummaryCard(
+                              averagePrediction,
+                              currentMonthSpending,
+                              predictions.length,
+                              currency,
+                            ),
+                            const SizedBox(height: 24),
+                          ],
 
-                          // Predictions Chart
-                          _buildPredictionsChart(predictions, maxPrediction),
-                          const SizedBox(height: 24),
+                          // Predictions Chart - only show if there's data
+                          if (predictions.isNotEmpty && maxPrediction > 0) ...[
+                            _buildPredictionsChart(context, predictions, maxPrediction, currency),
+                            const SizedBox(height: 24),
+                          ],
 
-                          // Monthly Breakdown
-                          _buildMonthlyBreakdown(predictions, currentMonthSpending),
-                          const SizedBox(height: 20),
+                          // Monthly Breakdown - only show if there's data
+                          if (predictions.isNotEmpty) ...[
+                            _buildMonthlyBreakdown(
+                              context,
+                              ref,
+                              predictions,
+                              currentMonthSpending,
+                              currency,
+                              budgets,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
                         ],
                       ),
                     ),
@@ -123,6 +187,7 @@ class PredictionsScreen extends ConsumerWidget {
     double averagePrediction,
     double currentMonthSpending,
     int numberOfMonths,
+    String currency,
   ) {
     final averageChange = averagePrediction - currentMonthSpending;
     final averageChangePercent = currentMonthSpending > 0
@@ -169,7 +234,7 @@ class PredictionsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₱${averagePrediction.toStringAsFixed(0)}',
+                    CurrencyFormatter.format(averagePrediction, currency),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -230,18 +295,20 @@ class PredictionsScreen extends ConsumerWidget {
   }
 
   Widget _buildPredictionsChart(
+    BuildContext context,
     List<MonthlyPrediction> predictions,
     double maxAmount,
+    String currency,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Predicted Expenses by Month',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -249,15 +316,15 @@ class PredictionsScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.grey.withOpacity(0.15),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -288,58 +355,72 @@ class PredictionsScreen extends ConsumerWidget {
 
                     return Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              height: height,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: barColors,
+                            Flexible(
+                              child: Container(
+                                constraints: BoxConstraints(
+                                  maxHeight: 200,
+                                  minHeight: height > 0 ? height : 0,
                                 ),
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(8),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: barColors[0].withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+                                height: height > 0 ? height : null,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: barColors,
                                   ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '₱${(prediction.amount / 1000).toStringAsFixed(0)}k',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(8),
                                   ),
-                                  textAlign: TextAlign.center,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: barColors[0].withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
+                                child: height > 20
+                                    ? Center(
+                                        child: Text(
+                                          '${CurrencyFormatter.extractSymbol(currency)}${(prediction.amount / 1000).toStringAsFixed(0)}k',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      )
+                                    : null,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Text(
                               prediction.month,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
-                              '₱${prediction.amount.toStringAsFixed(0)}',
+                              CurrencyFormatter.format(prediction.amount, currency),
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
+                                fontSize: 10,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -356,18 +437,22 @@ class PredictionsScreen extends ConsumerWidget {
   }
 
   Widget _buildMonthlyBreakdown(
+    BuildContext context,
+    WidgetRef ref,
     List<MonthlyPrediction> predictions,
     double currentMonthSpending,
+    String currency,
+    List<BudgetModel> budgets,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Monthly Breakdown',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
@@ -379,19 +464,27 @@ class PredictionsScreen extends ConsumerWidget {
               : 0.0;
           final isIncrease = change >= 0;
 
+          // Calculate total budget for comparison
+          final totalBudget = budgets.fold<double>(
+            0.0,
+            (sum, budget) => sum + budget.limit,
+          );
+          final exceedsBudget = totalBudget > 0 && prediction.amount > totalBudget;
+          final budgetDifference = totalBudget > 0 ? prediction.amount - totalBudget : 0.0;
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.grey.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -423,13 +516,14 @@ class PredictionsScreen extends ConsumerWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '₱${prediction.amount.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        CurrencyFormatter.format(prediction.amount, currency),
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -446,18 +540,96 @@ class PredictionsScreen extends ConsumerWidget {
                                 : const Color(0xFF27AE60),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(1)}% vs current',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isIncrease
-                                  ? const Color(0xFFE74C3C)
-                                  : const Color(0xFF27AE60),
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(1)}% vs current',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isIncrease
+                                    ? const Color(0xFFE74C3C)
+                                    : const Color(0xFF27AE60),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
+                      // Budget Warning (if exceeds budget) - moved here
+                      if (exceedsBudget) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE74C3C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFE74C3C).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.warning_rounded,
+                                color: Color(0xFFE74C3C),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Exceeds budget by ${CurrencyFormatter.format(budgetDifference, currency)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFFE74C3C),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (totalBudget > 0 && prediction.amount <= totalBudget) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF27AE60).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF27AE60).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF27AE60),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Within budget',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF27AE60),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

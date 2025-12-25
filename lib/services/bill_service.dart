@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/bill_model.dart';
@@ -52,52 +51,19 @@ class BillService {
       return Stream.value([]);
     }
 
-    // Create stream with comprehensive error handling
-    // Use StreamController to catch all errors and emit empty list instead
-    final controller = StreamController<List<BillModel>>.broadcast();
-    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? subscription;
-    
-    // Set up the Firestore stream with error handling
-    try {
-      subscription = _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('bills')
-          .orderBy('dueDate', descending: false)
-          .snapshots()
-          .listen(
-        (snapshot) {
-          if (!controller.isClosed) {
-            final bills = snapshot.docs
-                .map((doc) => BillModel.fromMap(doc.id, doc.data()))
-                .toList();
-            controller.add(bills);
-          }
-        },
-        onError: (error, stackTrace) {
-          // Emit empty list on error instead of propagating
-          if (!controller.isClosed) {
-            controller.add(<BillModel>[]);
-          }
-        },
-        cancelOnError: false,
-      );
-    } catch (e, stackTrace) {
-      // If setup fails, emit empty list immediately
-      if (!controller.isClosed) {
-        controller.add(<BillModel>[]);
-      }
-    }
-    
-    // Handle stream cancellation
-    controller.onCancel = () {
-      subscription?.cancel();
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
-    
-    return controller.stream;
+    // Directly return Firestore stream for real-time updates
+    // This ensures real-time updates work correctly without StreamController interference
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('bills')
+        .orderBy('dueDate', descending: false)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => BillModel.fromMap(doc.id, doc.data()))
+              .toList();
+        });
   }
 
   /// Delete a bill

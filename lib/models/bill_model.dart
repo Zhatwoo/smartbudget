@@ -73,16 +73,43 @@ class BillModel {
 
   // Create from Firestore document
   factory BillModel.fromMap(String id, Map<String, dynamic> map) {
+    // Use constant IconData for tree-shaking compatibility
+    const defaultIcon = Icons.receipt_long;
+    final iconCodePoint = map['iconCodePoint'] as int?;
+    
+    // Safe date parsing with fallback (handle both Timestamp and String formats)
+    DateTime parseDueDate(dynamic dateValue) {
+      if (dateValue == null) {
+        return DateTime.now();
+      }
+      if (dateValue is Timestamp) {
+        return dateValue.toDate();
+      }
+      if (dateValue is DateTime) {
+        return dateValue;
+      }
+      if (dateValue is String) {
+        try {
+          return DateTime.parse(dateValue);
+        } catch (e) {
+          return DateTime.now();
+        }
+      }
+      return DateTime.now();
+    }
+    
     return BillModel(
       id: id,
       title: map['title'] ?? '',
       amount: (map['amount'] ?? 0).toDouble(),
-      dueDate: (map['dueDate'] as Timestamp).toDate(),
-      icon: IconData(
-        map['iconCodePoint'] ?? Icons.receipt_long.codePoint,
-        fontFamily: map['iconFontFamily'],
-        fontPackage: map['iconFontPackage'],
-      ),
+      dueDate: parseDueDate(map['dueDate']),
+      icon: iconCodePoint != null
+          ? IconData(
+              iconCodePoint,
+              fontFamily: map['iconFontFamily'] as String?,
+              fontPackage: map['iconFontPackage'] as String?,
+            )
+          : defaultIcon,
       category: map['category'] ?? 'Bills',
       isRecurring: map['isRecurring'] ?? false,
       recurringDays: map['recurringDays'],

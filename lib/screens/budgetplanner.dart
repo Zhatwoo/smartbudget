@@ -5,6 +5,7 @@ import '../models/budget_model.dart';
 import '../models/upcoming_bill_model.dart';
 import '../models/bill_model.dart';
 import '../models/transaction_model.dart';
+import '../utils/currency_formatter.dart';
 
 class BudgetPlannerScreen extends ConsumerStatefulWidget {
   const BudgetPlannerScreen({super.key});
@@ -97,7 +98,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
               ),
               decoration: InputDecoration(
                 labelText: 'Monthly Budget',
-                prefixText: '₱ ',
+                prefixText: '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))} ',
                 prefixStyle: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -105,18 +106,18 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               ),
             ),
@@ -128,7 +129,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -254,7 +255,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
                 decoration: InputDecoration(
                   labelText: 'Monthly Budget',
-                  prefixText: '₱ ',
+                  prefixText: '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))} ',
                   prefixStyle: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -262,18 +263,18 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                 ),
               ),
@@ -285,7 +286,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -331,8 +332,8 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -358,7 +359,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
     // Show loading if budgets or transactions are still loading
     if (budgetsAsync.isLoading || transactionsAsync.isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFAFAFA),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Column(
             children: [
@@ -410,7 +411,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
     final atRiskBudgets = budgets.where((b) => b.isAtRisk && !b.isExceeded).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -449,14 +450,14 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                           Icon(
                             Icons.account_balance_wallet_outlined,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No budgets set',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -465,7 +466,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                             'Create a budget to start tracking',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -511,13 +512,13 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Flexible(
+                              Flexible(
                                 child: Text(
                                   'Monthly Budget by Category',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     letterSpacing: -0.5,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -535,7 +536,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                                   ),
                                 ),
                                 style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFF4A90E2),
+                                  foregroundColor: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ],
@@ -607,7 +608,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '₱${totalAllocated.toStringAsFixed(0)}',
+                    CurrencyFormatter.format(totalAllocated, ref.read(currencyProvider)),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 26,
@@ -630,7 +631,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '₱${totalRemaining.toStringAsFixed(0)}',
+                    CurrencyFormatter.format(totalRemaining, ref.read(currencyProvider)),
                     style: TextStyle(
                       color: totalRemaining >= 0
                           ? Colors.white
@@ -649,7 +650,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Spent: ₱${totalSpent.toStringAsFixed(0)}',
+                'Spent: ${CurrencyFormatter.format(totalSpent, ref.read(currencyProvider))}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -691,7 +692,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFFE74C3C).withOpacity(0.3),
@@ -699,7 +700,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -724,12 +725,12 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Overspending Alert!',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -745,14 +746,14 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 children: [
                   Text(
                     budget.category,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
-                    'Overspent by ₱${overspent.toStringAsFixed(0)}',
+                    'Overspent by ${CurrencyFormatter.format(overspent, ref.read(currencyProvider))}',
                     style: const TextStyle(
                       color: Color(0xFFE74C3C),
                       fontWeight: FontWeight.bold,
@@ -772,7 +773,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFFF39C12).withOpacity(0.3),
@@ -780,7 +781,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -805,12 +806,12 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Categories at Risk',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -825,10 +826,10 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 children: [
                   Text(
                     budget.category,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
@@ -861,19 +862,19 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isOverspent
               ? const Color(0xFFE74C3C).withOpacity(0.3)
               : isAtRisk
                   ? const Color(0xFFF39C12).withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.15),
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -905,10 +906,10 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   children: [
                     Text(
                       budget.category,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -916,19 +917,19 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                     Row(
                       children: [
                         Text(
-                          'Allocated: ₱${budget.limit.toStringAsFixed(0)}',
+                          'Allocated: ${CurrencyFormatter.format(budget.limit, ref.read(currencyProvider))}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Spent: ₱${budget.spent.toStringAsFixed(0)}',
+                          'Spent: ${CurrencyFormatter.format(budget.spent, ref.read(currencyProvider))}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -941,7 +942,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 icon: const Icon(Icons.edit_rounded, size: 20),
                 onPressed: () => _editBudget(budget),
                 tooltip: 'Edit Budget',
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
@@ -957,7 +958,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Remaining: ₱${remaining.toStringAsFixed(0)}',
+                    'Remaining: ${CurrencyFormatter.format(remaining, ref.read(currencyProvider))}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1009,10 +1010,10 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '${percentage.toStringAsFixed(1)}%',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -1025,7 +1026,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 child: LinearProgressIndicator(
                   value: percentage > 100 ? 1.0 : percentage / 100,
                   minHeight: 10,
-                  backgroundColor: Colors.grey.withOpacity(0.15),
+                  backgroundColor: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isOverspent
                         ? const Color(0xFFE74C3C)
@@ -1082,12 +1083,12 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   size: 24,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Upcoming Bills',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -1100,7 +1101,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                     '${allBills.length} ${allBills.length == 1 ? 'bill' : 'bills'}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1122,15 +1123,15 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
           Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.grey.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -1142,13 +1143,13 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   Icon(
                     Icons.receipt_long_outlined,
                     size: 48,
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'No upcoming bills',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1157,7 +1158,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   Text(
                     'Add bills manually or they will be detected from transactions',
                     style: TextStyle(
-                      color: Colors.grey.shade500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13,
                     ),
                     textAlign: TextAlign.center,
@@ -1168,8 +1169,8 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Add Bill'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4A90E2),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
                 ],
@@ -1207,9 +1208,9 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
       statusColor = const Color(0xFFF39C12);
       backgroundColor = const Color(0xFFF39C12).withOpacity(0.05);
     } else {
-      borderColor = Colors.grey.withOpacity(0.3);
-      statusColor = Colors.grey;
-      backgroundColor = Colors.white;
+      borderColor = Theme.of(context).colorScheme.outline.withOpacity(0.3);
+      statusColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
     }
 
     return Container(
@@ -1224,7 +1225,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1255,10 +1256,10 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
               children: [
                 Text(
                   bill.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -1266,11 +1267,11 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 Row(
                   children: [
                     Text(
-                      '₱${bill.amount.toStringAsFixed(2)}',
+                      CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1306,7 +1307,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 '${bill.dueDate.day}/${bill.dueDate.month}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1315,7 +1316,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 '${bill.dueDate.year}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -1381,7 +1382,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Amount',
-                    prefixText: '₱ ',
+                    prefixText: '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))} ',
                     prefixIcon: const Icon(Icons.attach_money),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1419,7 +1420,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<Map<String, dynamic>>(
-                  value: billIcons.first,
+                  value: billIcons.isNotEmpty ? billIcons.first : null,
                   decoration: InputDecoration(
                     labelText: 'Bill Type',
                     prefixIcon: Icon(selectedIcon),
@@ -1498,7 +1499,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1565,8 +1566,8 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1600,9 +1601,9 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
       statusColor = const Color(0xFFF39C12);
       backgroundColor = const Color(0xFFF39C12).withOpacity(0.05);
     } else {
-      borderColor = Colors.grey.withOpacity(0.3);
-      statusColor = Colors.grey;
-      backgroundColor = Colors.white;
+      borderColor = Theme.of(context).colorScheme.outline.withOpacity(0.3);
+      statusColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
     }
 
     return Container(
@@ -1617,7 +1618,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1648,10 +1649,10 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                     Expanded(
                       child: Text(
                         bill.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -1681,11 +1682,11 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 Row(
                   children: [
                     Text(
-                      '₱${bill.amount.toStringAsFixed(2)}',
+                      CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1713,7 +1714,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
             ),
           ),
           PopupMenuButton(
-            icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurfaceVariant),
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: const Row(
@@ -1760,7 +1761,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 '${bill.dueDate.day}/${bill.dueDate.month}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1769,7 +1770,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 '${bill.dueDate.year}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -1834,7 +1835,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Amount',
-                    prefixText: '₱ ',
+                    prefixText: '${CurrencyFormatter.extractSymbol(ref.read(currencyProvider))} ',
                     prefixIcon: const Icon(Icons.attach_money),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1872,10 +1873,12 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<Map<String, dynamic>>(
-                  value: billIcons.firstWhere(
-                    (icon) => icon['icon'] == selectedIcon,
-                    orElse: () => billIcons.first,
-                  ),
+                  value: billIcons.isNotEmpty 
+                    ? billIcons.firstWhere(
+                        (icon) => icon['icon'] == selectedIcon,
+                        orElse: () => billIcons.isNotEmpty ? billIcons.first : billIcons[0],
+                      )
+                    : null,
                   decoration: InputDecoration(
                     labelText: 'Bill Type',
                     prefixIcon: Icon(selectedIcon),
@@ -1953,7 +1956,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -2006,8 +2009,8 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -2076,7 +2079,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.grey.shade700),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
           ElevatedButton(
