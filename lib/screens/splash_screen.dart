@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -36,9 +38,29 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    // Check authentication and onboarding status
-    final isAuthenticated = _checkAuthentication();
-    final hasSeenOnboarding = _checkOnboardingStatus();
+    // Check authentication and onboarding status using providers
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    final onboardingAsync = ref.read(onboardingCompletedProvider);
+    
+    // Wait for onboarding status if still loading
+    bool hasSeenOnboarding = false;
+    if (onboardingAsync.isLoading) {
+      await onboardingAsync.whenData((value) => hasSeenOnboarding = value);
+    } else {
+      hasSeenOnboarding = onboardingAsync.value ?? false;
+    }
+
+    if (!mounted) return;
+
+    // Initialize notification service if user is authenticated
+    if (isAuthenticated) {
+      try {
+        final notificationService = ref.read(notificationServiceProvider);
+        await notificationService.initialize();
+      } catch (e) {
+        // Silently fail - notification initialization errors shouldn't block app
+      }
+    }
 
     if (!mounted) return;
 
@@ -49,16 +71,6 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       Navigator.of(context).pushReplacementNamed('/home');
     }
-  }
-
-  bool _checkAuthentication() {
-    // TODO: Implement actual authentication check
-    return false;
-  }
-
-  bool _checkOnboardingStatus() {
-    // TODO: Implement actual onboarding status check
-    return false;
   }
 
   @override

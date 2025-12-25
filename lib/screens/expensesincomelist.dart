@@ -1,83 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
+import '../models/transaction_model.dart';
+import '../services/transaction_service.dart';
+import '../utils/currency_formatter.dart';
 
-class ExpensesIncomeListScreen extends StatefulWidget {
+class ExpensesIncomeListScreen extends ConsumerStatefulWidget {
   const ExpensesIncomeListScreen({super.key});
 
   @override
-  State<ExpensesIncomeListScreen> createState() => _ExpensesIncomeListScreenState();
+  ConsumerState<ExpensesIncomeListScreen> createState() => _ExpensesIncomeListScreenState();
 }
 
-class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
+class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
   DateTimeRange? _selectedDateRange;
-  final List<TransactionItem> _allTransactions = [
-    TransactionItem(
-      id: '1',
-      title: 'Grocery Shopping',
-      category: 'Food',
-      amount: -2500,
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      notes: 'Weekly groceries',
-      isExpense: true,
-    ),
-    TransactionItem(
-      id: '2',
-      title: 'Salary',
-      category: 'Salary',
-      amount: 50000,
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      notes: 'Monthly salary',
-      isExpense: false,
-    ),
-    TransactionItem(
-      id: '3',
-      title: 'Gas Bill',
-      category: 'Bills',
-      amount: -1200,
-      date: DateTime.now().subtract(const Duration(days: 3)),
-      notes: 'Electricity bill',
-      isExpense: true,
-    ),
-    TransactionItem(
-      id: '4',
-      title: 'Uber Ride',
-      category: 'Transport',
-      amount: -350,
-      date: DateTime.now().subtract(const Duration(days: 4)),
-      notes: 'Ride to office',
-      isExpense: true,
-    ),
-    TransactionItem(
-      id: '5',
-      title: 'Freelance Project',
-      category: 'Freelance',
-      amount: 15000,
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      notes: 'Web development project',
-      isExpense: false,
-    ),
-    TransactionItem(
-      id: '6',
-      title: 'Restaurant',
-      category: 'Food',
-      amount: -800,
-      date: DateTime.now().subtract(const Duration(days: 6)),
-      notes: 'Dinner with friends',
-      isExpense: true,
-    ),
-    TransactionItem(
-      id: '7',
-      title: 'Shopping',
-      category: 'Shopping',
-      amount: -3000,
-      date: DateTime.now().subtract(const Duration(days: 7)),
-      notes: 'New clothes',
-      isExpense: true,
-    ),
-  ];
 
-  List<TransactionItem> get _filteredTransactions {
+  List<TransactionModel> get _allTransactions {
+    final transactionsAsync = ref.watch(transactionsProvider);
+    if (transactionsAsync.value == null) return [];
+    return transactionsAsync.value!;
+  }
+
+  List<TransactionModel> get _filteredTransactions {
     var filtered = _allTransactions;
 
     // Filter by search
@@ -145,8 +91,8 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
     });
   }
 
-  void _viewTransactionDetails(TransactionItem transaction) {
-    final isIncome = transaction.amount > 0;
+  void _viewTransactionDetails(TransactionModel transaction) {
+    final isIncome = transaction.type == 'income';
     final amountColor = isIncome ? const Color(0xFF27AE60) : const Color(0xFFE74C3C);
     
     showModalBottomSheet(
@@ -154,9 +100,9 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -166,19 +112,19 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Transaction Details',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 22),
                   onPressed: () => Navigator.of(context).pop(),
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -187,7 +133,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             _buildDetailRow('Category', transaction.category),
             _buildDetailRow(
               'Amount',
-              '${isIncome ? '+' : ''}₱${transaction.amount.abs().toStringAsFixed(0)}',
+              CurrencyFormatter.formatWithSign(transaction.amount, ref.read(currencyProvider), showSign: true),
               valueColor: amountColor,
             ),
             _buildDetailRow('Date', _formatDate(transaction.date)),
@@ -269,7 +215,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),
@@ -279,7 +225,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             child: Text(
               value,
               style: TextStyle(
-                color: valueColor ?? Colors.black87,
+                color: valueColor ?? Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
                 letterSpacing: -0.2,
@@ -291,43 +237,410 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
     );
   }
 
-  void _editTransaction(TransactionItem transaction) {
-    // TODO: Navigate to edit screen or show edit dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Editing ${transaction.title}...')),
+  void _editTransaction(TransactionModel transaction) {
+    final _formKey = GlobalKey<FormState>();
+    final _titleController = TextEditingController(text: transaction.title);
+    final _amountController = TextEditingController(text: transaction.amount.abs().toStringAsFixed(2));
+    final _notesController = TextEditingController(text: transaction.notes ?? '');
+    
+    String? _selectedCategory = transaction.category;
+    DateTime _selectedDate = transaction.date;
+    bool _isExpense = transaction.type == 'expense';
+
+    final List<String> _expenseCategories = [
+      'Food',
+      'Transport',
+      'Bills',
+      'Shopping',
+      'Entertainment',
+      'Healthcare',
+      'Education',
+      'Other',
+    ];
+
+    final List<String> _incomeCategories = [
+      'Salary',
+      'Freelance',
+      'Investment',
+      'Gift',
+      'Other',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Edit Transaction',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        onPressed: () => Navigator.of(context).pop(),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Transaction Type Toggle
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() => _isExpense = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _isExpense ? const Color(0xFFE74C3C) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Expense',
+                                  style: TextStyle(
+                                    color: _isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() => _isExpense = false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: !_isExpense ? const Color(0xFF27AE60) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Income',
+                                  style: TextStyle(
+                                    color: !_isExpense ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Title Field
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: 'Title',
+                      prefixIcon: const Icon(Icons.title_rounded, size: 22),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a title';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Category Dropdown
+                  DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      prefixIcon: const Icon(Icons.category_rounded, size: 22),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                    dropdownColor: Theme.of(context).colorScheme.surface,
+                    items: (_isExpense ? _expenseCategories : _incomeCategories)
+                        .map((category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setDialogState(() => _selectedCategory = value),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a category';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Amount Field
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Amount',
+                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 22),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter an amount';
+                      }
+                      final amount = double.tryParse(value);
+                      if (amount == null || amount <= 0) {
+                        return 'Please enter a valid amount';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Date Picker
+                  InkWell(
+                    onTap: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setDialogState(() => _selectedDate = picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 22),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Notes Field
+                  TextFormField(
+                    controller: _notesController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Notes (Optional)',
+                      prefixIcon: const Icon(Icons.note_rounded, size: 22),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          try {
+                            final amount = double.parse(_amountController.text.trim());
+                            final updatedTransaction = transaction.copyWith(
+                              title: _titleController.text.trim(),
+                              category: _selectedCategory!,
+                              amount: _isExpense ? -amount : amount,
+                              date: _selectedDate,
+                              type: _isExpense ? 'expense' : 'income',
+                              notes: _notesController.text.trim().isEmpty 
+                                  ? null 
+                                  : _notesController.text.trim(),
+                            );
+
+                            final transactionService = ref.read(transactionServiceProvider);
+                            await transactionService.updateTransaction(updatedTransaction);
+
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Transaction updated successfully'),
+                                backgroundColor: Color(0xFF27AE60),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: ${e.toString()}'),
+                                backgroundColor: const Color(0xFFE74C3C),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4A90E2),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  void _deleteTransaction(TransactionItem transaction) {
-    showDialog(
+  void _deleteTransaction(TransactionModel transaction) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: Text('Are you sure you want to delete "${transaction.title}"?'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: Text(
+          'Delete Transaction',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${transaction.title}"?',
+          style: TextStyle(
+            fontSize: 15,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _allTransactions.removeWhere((t) => t.id == transaction.id);
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Transaction deleted')),
-              );
-            },
+            onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: const Color(0xFFE74C3C),
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Delete'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
+
+    if (confirmed == true && transaction.id != null) {
+      try {
+        final transactionService = ref.read(transactionServiceProvider);
+        await transactionService.deleteTransaction(transaction.id!);
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction deleted'),
+            backgroundColor: Color(0xFF27AE60),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: const Color(0xFFE74C3C),
+          ),
+        );
+      }
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -343,7 +656,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -377,13 +690,13 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             // Search Bar
             Container(
               padding: const EdgeInsets.all(16.0),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: TextField(
                 controller: _searchController,
                 style: const TextStyle(fontSize: 15),
                 decoration: InputDecoration(
                   hintText: 'Search transactions...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   prefixIcon: const Icon(Icons.search_rounded, size: 22),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
@@ -397,18 +710,18 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                       : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
                 onChanged: (value) {
@@ -420,42 +733,42 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
             // Filters
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Row(
                 children: [
                   // Category Filter
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedCategory,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       decoration: InputDecoration(
                         labelText: 'Category',
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 14,
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       items: _categories.map((category) {
                         return DropdownMenuItem<String>(
@@ -468,8 +781,11 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                           _selectedCategory = value!;
                         });
                       },
-                      dropdownColor: Colors.white,
-                      icon: const Icon(Icons.arrow_drop_down_rounded),
+                      dropdownColor: Theme.of(context).colorScheme.surface,
+                      icon: Icon(
+                        Icons.arrow_drop_down_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -486,10 +802,10 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                         ),
                         constraints: const BoxConstraints(minHeight: 56),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
                           ),
                         ),
                         child: Row(
@@ -504,7 +820,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                     'Date Range',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -512,10 +828,10 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                     _selectedDateRange == null
                                         ? 'All dates'
                                         : '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -528,13 +844,13 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                 onPressed: _clearDateRange,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               )
                             else
                               Icon(
                                 Icons.calendar_today_rounded,
                                 size: 18,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                           ],
                         ),
@@ -547,51 +863,44 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
 
             // Transactions List
             Expanded(
-              child: _filteredTransactions.isEmpty
-                  ? Center(
+              child: ref.watch(transactionsProvider).when(
+                data: (allTransactions) {
+                  if (_filteredTransactions.isEmpty) {
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.receipt_long_outlined,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No transactions found',
                             style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16.0),
-                      itemCount: _filteredTransactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = _filteredTransactions[index];
-                        final isIncome = transaction.amount > 0;
-                        final amountColor = isIncome ? const Color(0xFF27AE60) : const Color(0xFFE74C3C);
+                    );
+                  }
+                  
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: _filteredTransactions.length,
+                    itemBuilder: (context, index) {
+                      final transaction = _filteredTransactions[index];
+                      final isIncome = transaction.type == 'income';
+                      final amountColor = isIncome ? const Color(0xFF27AE60) : const Color(0xFFE74C3C);
                         
                         return Dismissible(
-                          key: Key(transaction.id),
+                          key: Key(transaction.id ?? 'transaction_$index'),
+                          direction: DismissDirection.endToStart, // Only allow swipe left to delete
                           background: Container(
-                            alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.only(left: 20),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4A90E2),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          secondaryBackground: Container(
                             alignment: Alignment.centerRight,
                             padding: const EdgeInsets.only(right: 20),
                             decoration: BoxDecoration(
@@ -604,61 +913,59 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                             ),
                           ),
                           onDismissed: (direction) {
-                            if (direction == DismissDirection.endToStart) {
-                              _deleteTransaction(transaction);
-                            } else if (direction == DismissDirection.startToEnd) {
-                              _editTransaction(transaction);
-                            }
+                            _deleteTransaction(transaction);
                           },
                           confirmDismiss: (direction) async {
-                            if (direction == DismissDirection.endToStart) {
-                              return await showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  title: const Text(
-                                    'Delete Transaction',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  content: Text(
-                                    'Are you sure you want to delete "${transaction.title}"?',
-                                    style: const TextStyle(fontSize: 15),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(false),
-                                      child: Text(
-                                        'Cancel',
-                                        style: TextStyle(
-                                          color: Colors.grey.shade700,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => Navigator.of(context).pop(true),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFE74C3C),
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'Delete',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  ],
+                            return await showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: Theme.of(context).colorScheme.surface,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                              ) ?? false;
-                            }
-                            return true;
+                                title: Text(
+                                  'Delete Transaction',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to delete "${transaction.title}"?',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE74C3C),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Delete',
+                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ) ?? false;
                           },
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -668,15 +975,15 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: Colors.grey.withOpacity(0.15),
+                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                                     width: 1,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
+                                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -706,10 +1013,10 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                         children: [
                                           Text(
                                             transaction.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
-                                              color: Colors.black87,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                               letterSpacing: -0.2,
                                             ),
                                           ),
@@ -720,7 +1027,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                                 transaction.category,
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -729,7 +1036,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                                 '•',
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade400,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
@@ -737,7 +1044,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                                 _formatDate(transaction.date),
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -748,7 +1055,7 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                                     ),
                                     // Amount
                                     Text(
-                                      '${isIncome ? '+' : ''}₱${transaction.amount.abs().toStringAsFixed(0)}',
+                                      CurrencyFormatter.formatWithSign(transaction.amount, ref.read(currencyProvider), showSign: true),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -763,33 +1070,47 @@ class _ExpensesIncomeListScreenState extends State<ExpensesIncomeListScreen> {
                           ),
                         );
                       },
-                    ),
+                    );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading transactions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.toString(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
         ],
         ),
       ),
     );
   }
-}
-
-// Transaction Model
-class TransactionItem {
-  final String id;
-  final String title;
-  final String category;
-  final double amount;
-  final DateTime date;
-  final String? notes;
-  final bool isExpense;
-
-  TransactionItem({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.amount,
-    required this.date,
-    this.notes,
-    required this.isExpense,
-  });
 }
 

@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -87,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -179,10 +179,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Title
           Text(
             page.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
@@ -194,7 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             page.description,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),

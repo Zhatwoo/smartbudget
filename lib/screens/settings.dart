@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/humbergersidebar.dart';
+import '../providers/providers.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  // User Profile
-  String _userName = 'John Doe';
-  String _userEmail = 'john.doe@example.com';
-  String _userPhone = '+63 912 345 6789';
-  String? _profilePicturePath; // Path to profile picture
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  // Profile picture will be loaded from Firestore via provider
 
-  // Preferences
-  String _selectedCurrency = 'PHP (₱)';
-  bool _notificationsEnabled = true;
-  bool _budgetAlertsEnabled = true;
-  bool _inflationAlertsEnabled = true;
-  bool _spendingAlertsEnabled = true;
-  bool _darkModeEnabled = false;
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotifications();
+  }
 
-  // Backup & Sync
-  bool _autoBackupEnabled = true;
-  String _backupFrequency = 'Daily';
-  bool _cloudSyncEnabled = false;
+  Future<void> _initializeNotifications() async {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      await notificationService.initialize();
+    } catch (e) {
+      // Silently fail - notifications will be handled when toggled
+    }
+  }
 
   final List<String> _currencies = [
     'PHP (₱)',
@@ -36,13 +36,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'JPY (¥)',
   ];
 
-  final List<String> _backupFrequencies = [
-    'Daily',
-    'Weekly',
-    'Monthly',
-    'Manual',
-  ];
-
   Future<void> _pickProfilePicture() async {
     // TODO: Implement actual image picker
     // For now, simulate image selection
@@ -50,31 +43,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // final ImagePicker picker = ImagePicker();
     // final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
-    // Simulate image selection
-    setState(() {
-      _profilePicturePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    });
-    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Profile picture selected'),
+        content: Text('Profile picture selection coming soon'),
         backgroundColor: Color(0xFF27AE60),
         duration: Duration(seconds: 2),
       ),
     );
   }
 
-  void _removeProfilePicture() {
-    setState(() {
-      _profilePicturePath = null;
-    });
-  }
-
   void _updateProfile() {
-    final nameController = TextEditingController(text: _userName);
-    final emailController = TextEditingController(text: _userEmail);
-    final phoneController = TextEditingController(text: _userPhone);
-    String? tempProfilePath = _profilePicturePath;
+    // Get current profile data from providers
+    final profile = ref.read(userProfileProvider).value;
+    final displayName = profile?['displayName'] as String? ?? '';
+    final email = profile?['email'] as String? ?? '';
+    final mobileNumber = profile?['mobileNumber'] as String? ?? '';
+    final username = profile?['username'] as String? ?? '';
+    
+    final nameController = TextEditingController(text: displayName);
+    final emailController = TextEditingController(text: email);
+    final phoneController = TextEditingController(text: mobileNumber);
+    final usernameController = TextEditingController(text: username);
 
     showDialog(
       context: context,
@@ -102,32 +91,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4A90E2).withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFF4A90E2).withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                             width: 2,
                           ),
                         ),
-                        child: tempProfilePath != null
-                            ? ClipOval(
-                                child: Image.asset(
-                                  'assets/placeholder.png', // Placeholder
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.person_rounded,
-                                      size: 50,
-                                      color: Color(0xFF4A90E2),
-                                    );
-                                  },
-                                ),
-                              )
-                            : const Icon(
-                                Icons.person_rounded,
-                                size: 50,
-                                color: Color(0xFF4A90E2),
-                              ),
+                        child: Icon(
+                          Icons.person_rounded,
+                          size: 50,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -136,30 +111,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4A90E2),
+                            color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               width: 2,
                             ),
                           ),
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(
-                              tempProfilePath != null
-                                  ? Icons.edit_rounded
-                                  : Icons.add_rounded,
+                              Icons.add_rounded,
                               size: 18,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                             onPressed: () async {
-                              // Simulate image picker
-                              setDialogState(() {
-                                tempProfilePath = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                              });
+                              // TODO: Implement image picker
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Profile picture selected'),
+                                  content: Text('Profile picture selection coming soon'),
                                   duration: Duration(seconds: 1),
                                 ),
                               );
@@ -167,31 +137,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      if (tempProfilePath != null)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              setDialogState(() {
-                                tempProfilePath = null;
-                              });
-                            },
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE74C3C),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -205,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -219,7 +164,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: usernameController,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -228,12 +186,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
-                    labelText: 'Phone Number',
+                    labelText: 'Mobile Number (Optional)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ],
@@ -245,30 +203,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _userName = nameController.text;
-                  _userEmail = emailController.text;
-                  _userPhone = phoneController.text;
-                  _profilePicturePath = tempProfilePath;
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated successfully'),
-                    backgroundColor: Color(0xFF27AE60),
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  final firebaseService = ref.read(firebaseServiceProvider);
+                  await firebaseService.updateUserProfile(
+                    displayName: nameController.text.trim(),
+                    username: usernameController.text.trim(),
+                    mobileNumber: phoneController.text.trim().isEmpty 
+                        ? null 
+                        : phoneController.text.trim(),
+                  );
+                  
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Profile updated successfully'),
+                      backgroundColor: const Color(0xFF27AE60),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating profile: ${e.toString()}'),
+                      backgroundColor: const Color(0xFFE74C3C),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A90E2),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -284,7 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _handleLogout() {
+  void _handleLogout() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -296,8 +268,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              final authService = ref.read(authServiceProvider);
+              await authService.signOut();
+              if (!mounted) return;
               Navigator.of(context).pushReplacementNamed('/login');
             },
             style: ElevatedButton.styleFrom(
@@ -311,50 +286,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _performBackup() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    // Simulate backup
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Backup completed successfully')),
-    );
-  }
-
-  Future<void> _performSync() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    // Simulate sync
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sync completed successfully')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Get profile data from providers
+    final profileAsync = ref.watch(userProfileProvider);
+    final displayName = ref.watch(userDisplayNameProvider);
+    final email = ref.watch(userEmailProvider);
+    final mobileNumber = ref.watch(userMobileNumberProvider);
+    final username = ref.watch(userUsernameProvider);
+    final photoUrl = ref.watch(userPhotoUrlProvider);
+    
+    // Handle loading state
+    if (profileAsync.isLoading) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -394,15 +348,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(24.0),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: Colors.grey.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -417,31 +371,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 100,
                               height: 100,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFF4A90E2).withOpacity(0.3),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                   width: 2,
                                 ),
                               ),
-                              child: _profilePicturePath != null
+                              child: photoUrl != null && photoUrl!.isNotEmpty
                                   ? ClipOval(
-                                      child: Image.asset(
-                                        'assets/placeholder.png', // Placeholder - replace with actual image path
+                                      child: Image.network(
+                                        photoUrl!,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
-                                          return const Icon(
+                                          return Icon(
                                             Icons.person_rounded,
                                             size: 50,
-                                            color: Color(0xFF4A90E2),
+                                            color: Theme.of(context).colorScheme.primary,
                                           );
                                         },
                                       ),
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       Icons.person_rounded,
                                       size: 50,
-                                      color: Color(0xFF4A90E2),
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                             ),
                             Positioned(
@@ -453,17 +407,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   width: 32,
                                   height: 32,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF4A90E2),
+                                    color: Theme.of(context).colorScheme.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       width: 2,
                                     ),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.camera_alt_rounded,
                                     size: 16,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                   ),
                                 ),
                               ),
@@ -472,32 +426,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          _userName,
-                          style: const TextStyle(
+                          displayName ?? 'No name',
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: Theme.of(context).colorScheme.onSurface,
                             letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          _userEmail,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                        if (email != null) ...[
+                          Text(
+                            email,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _userPhone,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 6),
+                        ],
+                        if (username != null) ...[
+                          Text(
+                            '@$username',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                        ],
+                        if (mobileNumber != null && mobileNumber!.isNotEmpty) ...[
+                          Text(
+                            mobileNumber!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
@@ -518,10 +487,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               side: BorderSide(
-                                color: const Color(0xFF4A90E2).withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                                 width: 1.5,
                               ),
-                              foregroundColor: const Color(0xFF4A90E2),
+                              foregroundColor: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -534,15 +503,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSectionHeader('Preferences'),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: Colors.grey.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -554,8 +523,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _buildSettingsTile(
                           icon: Icons.attach_money_rounded,
                           title: 'Currency',
-                          subtitle: _selectedCurrency,
+                          subtitle: ref.watch(currencyProvider),
                           onTap: () {
+                            final currentCurrency = ref.read(currencyProvider);
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
@@ -575,12 +545,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     return RadioListTile<String>(
                                       title: Text(currency),
                                       value: currency,
-                                      groupValue: _selectedCurrency,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _selectedCurrency = value!;
-                                        });
-                                        Navigator.of(context).pop();
+                                      groupValue: currentCurrency,
+                                      onChanged: (value) async {
+                                        if (value != null) {
+                                          await ref.read(currencyProvider.notifier).setCurrency(value);
+                                          if (mounted) {
+                                            Navigator.of(context).pop();
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Currency set to $value'),
+                                                backgroundColor: const Color(0xFF27AE60),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        }
                                       },
                                     );
                                   }).toList(),
@@ -589,18 +568,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             );
                           },
                         ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        Divider(height: 1, color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
                         // Dark Mode
                         _buildSwitchTile(
                           icon: Icons.dark_mode_rounded,
                           title: 'Dark Mode',
                           subtitle: 'Enable dark theme',
-                          value: _darkModeEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _darkModeEnabled = value;
-                            });
-                            // TODO: Implement dark mode toggle
+                          value: ref.watch(darkModeProvider),
+                          onChanged: (value) async {
+                            await ref.read(darkModeProvider.notifier).setDarkMode(value);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(value ? 'Dark mode enabled' : 'Dark mode disabled'),
+                                  backgroundColor: const Color(0xFF27AE60),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           },
                         ),
                       ],
@@ -612,15 +597,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSectionHeader('Notifications'),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: Colors.grey.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -632,157 +617,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.notifications_rounded,
                           title: 'Enable Notifications',
                           subtitle: 'Receive app notifications',
-                          value: _notificationsEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _notificationsEnabled = value;
-                            });
+                          value: ref.watch(notificationsEnabledProvider),
+                          onChanged: (value) async {
+                            await ref.read(notificationsEnabledProvider.notifier).setNotificationsEnabled(value);
+                            
+                            if (value) {
+                              // Request notification permissions
+                              try {
+                                final notificationService = ref.read(notificationServiceProvider);
+                                await notificationService.initialize();
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error enabling notifications: ${e.toString()}'),
+                                      backgroundColor: const Color(0xFFE74C3C),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                            }
+                            
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(value ? 'Notifications enabled' : 'Notifications disabled'),
+                                  backgroundColor: const Color(0xFF27AE60),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           },
                         ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        Divider(height: 1, color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
                         _buildSwitchTile(
                           icon: Icons.account_balance_wallet_rounded,
                           title: 'Budget Alerts',
                           subtitle: 'Alert when approaching budget limit',
-                          value: _budgetAlertsEnabled,
-                          onChanged: _notificationsEnabled
-                              ? (value) {
-                                  setState(() {
-                                    _budgetAlertsEnabled = value;
-                                  });
+                          value: ref.watch(budgetAlertsProvider),
+                          onChanged: ref.watch(notificationsEnabledProvider)
+                              ? (value) async {
+                                  await ref.read(budgetAlertsProvider.notifier).setBudgetAlertsEnabled(value);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(value ? 'Budget alerts enabled' : 'Budget alerts disabled'),
+                                        backgroundColor: const Color(0xFF27AE60),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
                                 }
                               : null,
                         ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        Divider(height: 1, color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
                         _buildSwitchTile(
                           icon: Icons.trending_up_rounded,
                           title: 'Inflation Alerts',
                           subtitle: 'Alert about price changes',
-                          value: _inflationAlertsEnabled,
-                          onChanged: _notificationsEnabled
-                              ? (value) {
-                                  setState(() {
-                                    _inflationAlertsEnabled = value;
-                                  });
+                          value: ref.watch(inflationAlertsProvider),
+                          onChanged: ref.watch(notificationsEnabledProvider)
+                              ? (value) async {
+                                  await ref.read(inflationAlertsProvider.notifier).setInflationAlertsEnabled(value);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(value ? 'Inflation alerts enabled' : 'Inflation alerts disabled'),
+                                        backgroundColor: const Color(0xFF27AE60),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
                                 }
                               : null,
                         ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                        Divider(height: 1, color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
                         _buildSwitchTile(
                           icon: Icons.warning_rounded,
                           title: 'Spending Alerts',
                           subtitle: 'Alert about unusual spending',
-                          value: _spendingAlertsEnabled,
-                          onChanged: _notificationsEnabled
-                              ? (value) {
-                                  setState(() {
-                                    _spendingAlertsEnabled = value;
-                                  });
+                          value: ref.watch(spendingAlertsProvider),
+                          onChanged: ref.watch(notificationsEnabledProvider)
+                              ? (value) async {
+                                  await ref.read(spendingAlertsProvider.notifier).setSpendingAlertsEnabled(value);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(value ? 'Spending alerts enabled' : 'Spending alerts disabled'),
+                                        backgroundColor: const Color(0xFF27AE60),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
                                 }
                               : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Backup & Sync Section
-                  _buildSectionHeader('Backup & Sync'),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.grey.withOpacity(0.15),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildSwitchTile(
-                          icon: Icons.backup_rounded,
-                          title: 'Auto Backup',
-                          subtitle: 'Automatically backup your data',
-                          value: _autoBackupEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _autoBackupEnabled = value;
-                            });
-                          },
-                        ),
-                        if (_autoBackupEnabled) ...[
-                          Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
-                          _buildSettingsTile(
-                            icon: Icons.schedule_rounded,
-                            title: 'Backup Frequency',
-                            subtitle: _backupFrequency,
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  title: const Text(
-                                    'Backup Frequency',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: _backupFrequencies.map((frequency) {
-                                      return RadioListTile<String>(
-                                        title: Text(frequency),
-                                        value: frequency,
-                                        groupValue: _backupFrequency,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _backupFrequency = value!;
-                                          });
-                                          Navigator.of(context).pop();
-                                        },
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
-                        _buildSwitchTile(
-                          icon: Icons.cloud_rounded,
-                          title: 'Cloud Sync',
-                          subtitle: 'Sync data with cloud storage',
-                          value: _cloudSyncEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              _cloudSyncEnabled = value;
-                            });
-                          },
-                        ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
-                        _buildSettingsTile(
-                          icon: Icons.backup_outlined,
-                          title: 'Manual Backup',
-                          subtitle: 'Create backup now',
-                          onTap: _performBackup,
-                        ),
-                        Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
-                        _buildSettingsTile(
-                          icon: Icons.sync_rounded,
-                          title: 'Sync Now',
-                          subtitle: 'Sync with cloud storage',
-                          onTap: _cloudSyncEnabled ? _performSync : null,
                         ),
                       ],
                     ),
@@ -830,10 +759,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface,
           letterSpacing: -0.3,
         ),
       ),
@@ -856,13 +785,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: const Color(0xFF4A90E2),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 16),
@@ -872,10 +801,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -884,7 +813,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -893,7 +822,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 22,
             ),
           ],
@@ -933,10 +862,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -945,7 +874,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -955,7 +884,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF4A90E2),
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),

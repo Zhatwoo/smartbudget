@@ -50,7 +50,7 @@ class SidebarMenuPopup extends StatelessWidget {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -60,10 +60,10 @@ class SidebarMenuPopup extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Smart Budget',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -72,7 +72,7 @@ class SidebarMenuPopup extends StatelessWidget {
                   Text(
                     'Inflation Tracker',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                       fontSize: 12,
                     ),
                   ),
