@@ -245,6 +245,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: ListView.builder(
                           padding: const EdgeInsets.all(20.0),
                           itemCount: notifications.length,
+                          itemExtent: null, // Allow flexible height
+                          cacheExtent: 300.0,
+                          addAutomaticKeepAlives: false,
                           itemBuilder: (context, index) {
                             final notification = notifications[index];
                             final color = _getNotificationColor(notification.type);
@@ -292,7 +295,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                   onTap: () => _handleNotificationTap(notification),
                                   borderRadius: BorderRadius.circular(14),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(20.0),
+                                    padding: const EdgeInsets.all(16.0),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -316,6 +319,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Row(
                                                 children: [
@@ -330,6 +334,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                                         color: Theme.of(context).colorScheme.onSurface,
                                                         letterSpacing: -0.2,
                                                       ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   if (!notification.isRead)
@@ -343,16 +349,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                                     ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                notification.message,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                  fontWeight: FontWeight.w400,
+                                              const SizedBox(height: 6),
+                                              Flexible(
+                                                child: Text(
+                                                  notification.message,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              const SizedBox(height: 8),
+                                              const SizedBox(height: 6),
                                               Text(
                                                 _formatTimestamp(notification.timestamp),
                                                 style: TextStyle(

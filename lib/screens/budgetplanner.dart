@@ -1178,13 +1178,21 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
             ),
           )
         else
-          ...allBills.map((bill) {
-            if (bill is BillModel) {
-              return _buildUserBillCard(bill);
-            } else {
-              return _buildUpcomingBillCard(bill as UpcomingBillModel);
-            }
-          }).toList(),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: allBills.length,
+            itemExtent: 100.0, // Fixed height for better performance
+            cacheExtent: 300.0,
+            itemBuilder: (context, index) {
+              final bill = allBills[index];
+              if (bill is BillModel) {
+                return _buildUserBillCard(bill);
+              } else {
+                return _buildUpcomingBillCard(bill as UpcomingBillModel);
+              }
+            },
+          ),
       ],
     );
   }
@@ -1215,7 +1223,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(14),
@@ -1253,6 +1261,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   bill.title,
@@ -1266,12 +1275,15 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Text(
-                      CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1643,6 +1655,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
@@ -1655,6 +1668,7 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                           color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.3,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (bill.isRecurring)
@@ -1681,12 +1695,15 @@ class _BudgetPlannerScreenState extends ConsumerState<BudgetPlannerScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Text(
-                      CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        CurrencyFormatter.format(bill.amount, ref.read(currencyProvider), decimals: 2),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 12),

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../models/transaction_model.dart';
 import '../services/transaction_service.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/skeleton_loader.dart';
 
 class ExpensesIncomeListScreen extends ConsumerStatefulWidget {
   const ExpensesIncomeListScreen({super.key});
@@ -16,6 +18,15 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
   DateTimeRange? _selectedDateRange;
+  Timer? _searchDebounceTimer;
+  String _searchQuery = ''; // Debounced search query
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchDebounceTimer?.cancel();
+    super.dispose();
+  }
 
   List<TransactionModel> get _allTransactions {
     final transactionsAsync = ref.watch(transactionsProvider);
@@ -26,19 +37,19 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
   List<TransactionModel> get _filteredTransactions {
     var filtered = _allTransactions;
 
-    // Filter by search
-    if (_searchController.text.isNotEmpty) {
+    // Filter by search (using debounced query)
+    if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((transaction) {
         return transaction.title
                 .toLowerCase()
-                .contains(_searchController.text.toLowerCase()) ||
+                .contains(_searchQuery.toLowerCase()) ||
             transaction.category
                 .toLowerCase()
-                .contains(_searchController.text.toLowerCase()) ||
+                .contains(_searchQuery.toLowerCase()) ||
             (transaction.notes != null &&
                 transaction.notes!
                     .toLowerCase()
-                    .contains(_searchController.text.toLowerCase()));
+                    .contains(_searchQuery.toLowerCase()));
       }).toList();
     }
 
@@ -648,12 +659,6 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -725,6 +730,16 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
                 onChanged: (value) {
+                  // Debounce search to reduce rebuilds
+                  _searchDebounceTimer?.cancel();
+                  _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+                    if (mounted) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    }
+                  });
+                  // Update UI immediately for clear button visibility
                   setState(() {});
                 },
               ),
@@ -892,6 +907,9 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                   return ListView.builder(
                     padding: const EdgeInsets.all(16.0),
                     itemCount: _filteredTransactions.length,
+                    itemExtent: 90.0, // Fixed height for better performance (increased to prevent overflow)
+                    cacheExtent: 500.0, // Cache 500px worth of items
+                    addAutomaticKeepAlives: false, // Don't keep items alive when scrolled away
                     itemBuilder: (context, index) {
                       final transaction = _filteredTransactions[index];
                       final isIncome = transaction.type == 'income';
@@ -907,9 +925,11 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                               color: const Color(0xFFE74C3C),
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
-                              Icons.delete_rounded,
-                              color: Colors.white,
+                            child: const RepaintBoundary(
+                              child: Icon(
+                                Icons.delete_rounded,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                           onDismissed: (direction) {
@@ -973,7 +993,7 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                               onTap: () => _viewTransactionDetails(transaction),
                               borderRadius: BorderRadius.circular(14),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(14),
@@ -1010,6 +1030,7 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
                                             transaction.title,
@@ -1072,8 +1093,11 @@ class _ExpensesIncomeListScreenState extends ConsumerState<ExpensesIncomeListScr
                       },
                     );
                 },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
+                loading: () => ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: 8,
+                  itemExtent: 90.0,
+                  itemBuilder: (context, index) => const TransactionSkeletonItem(),
                 ),
                 error: (error, stack) => Center(
                   child: Column(

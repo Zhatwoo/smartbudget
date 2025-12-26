@@ -77,7 +77,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
     _controllers = List.generate(
       _menuItems.length,
       (index) => AnimationController(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 250),
         vsync: this,
       ),
     );
@@ -85,7 +85,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
     _pressControllers = List.generate(
       _menuItems.length,
       (index) => AnimationController(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 100),
         vsync: this,
       ),
     );
@@ -94,7 +94,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: controller,
-          curve: Curves.easeOutBack,
+          curve: Curves.easeInOut,
         ),
       );
     }).toList();
@@ -103,7 +103,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: controller,
-          curve: Curves.easeOut,
+          curve: Curves.easeInOut,
         ),
       );
     }).toList();
@@ -112,7 +112,7 @@ class _FlowerPetalsMenuState extends State<FlowerPetalsMenu>
       return Tween<double>(begin: 1.0, end: 1.15).animate(
         CurvedAnimation(
           parent: controller,
-          curve: Curves.easeOut,
+          curve: Curves.easeInOut,
         ),
       );
     }).toList();
