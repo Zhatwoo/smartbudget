@@ -528,13 +528,17 @@ export default function Home() {
             >
               Download for Android
             </a>
-            <button 
-              disabled
-              className="px-8 py-4 bg-white/10 dark:bg-gray-900/10 text-white/70 dark:text-gray-900/70 rounded-xl font-semibold text-base cursor-not-allowed border border-white/20 dark:border-gray-900/20"
+            <a
+              href="/Smartbudget-iOS-Simulator.zip"
+              download="Smartbudget-iOS-Simulator.zip"
+              className="px-8 py-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl font-semibold text-base hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             >
-              Coming Soon
-            </button>
+              Download for iOS (Simulator)
+            </a>
           </div>
+          <p className="text-sm mt-4 opacity-75 dark:opacity-60">
+            iOS version is for Simulator use. For device installation, please use Xcode or TestFlight.
+          </p>
         </div>
       </section>
 
